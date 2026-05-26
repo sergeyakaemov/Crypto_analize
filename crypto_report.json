@@ -1,1 +1,44 @@
-"{\n    \"generated_at\": \"2026-05-26 10:29:28\",\n    \"total_coins_analyzed\": 48,\n    \"total_market_cap_usd\": \"$2515344232324\",\n    \"top_gainers\": [\n        {\n            \"name\": \"NEAR Protocol\",\n            \"symbol\": \"near\",\n            \"change_24h\": 14.69408\n        },\n        {\n            \"name\": \"Toncoin\",\n            \"symbol\": \"ton\",\n            \"change_24h\": 9.3011\n        },\n        {\n            \"name\": \"Rain\",\n            \"symbol\": \"rain\",\n            \"change_24h\": 6.10207\n        }\n    ],\n    \"top_losers\": [\n        {\n            \"name\": \"Ondo\",\n            \"symbol\": \"ondo\",\n            \"change_24h\": -5.37932\n        },\n        {\n            \"name\": \"Hyperliquid\",\n            \"symbol\": \"hype\",\n            \"change_24h\": -3.11872\n        },\n        {\n            \"name\": \"Uniswap\",\n            \"symbol\": \"uni\",\n            \"change_24h\": -2.66041\n        }\n    ],\n    \"highest_volume\": {\n        \"name\": \"Tether\",\n        \"symbol\": \"usdt\",\n        \"volume_usd\": 40076689293\n    }\n}"
+{
+    "generated_at": "2026-05-26 14:41:38",
+    "total_coins_analyzed": 48,
+    "total_market_cap_usd": 2505141086821,
+    "top_gainers": [
+        {
+            "name": "NEAR Protocol",
+            "symbol": "near",
+            "change_24h": 17.45127
+        },
+        {
+            "name": "OKB",
+            "symbol": "okb",
+            "change_24h": 11.59645
+        },
+        {
+            "name": "Toncoin",
+            "symbol": "ton",
+            "change_24h": 6.8855
+        }
+    ],
+    "top_losers": [
+        {
+            "name": "Zcash",
+            "symbol": "zec",
+            "change_24h": -5.47957
+        },
+        {
+            "name": "Hyperliquid",
+            "symbol": "hype",
+            "change_24h": -4.34723
+        },
+        {
+            "name": "Ondo",
+            "symbol": "ondo",
+            "change_24h": -4.1868
+        }
+    ],
+    "highest_volume": {
+        "name": "Tether",
+        "symbol": "usdt",
+        "volume_usd": 42938747894
+    }
+}
