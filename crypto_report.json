@@ -1,44 +1,44 @@
 {
-    "generated_at": "2026-05-26 14:41:38",
-    "total_coins_analyzed": 48,
-    "total_market_cap_usd": 2505141086821,
+    "generated_at": "2026-05-27 12:08:02",
+    "total_coins_analyzed": 50,
+    "total_market_cap_usd": 2504943482246,
     "top_gainers": [
         {
-            "name": "NEAR Protocol",
-            "symbol": "near",
-            "change_24h": 17.45127
+            "name": "Rain",
+            "symbol": "rain",
+            "change_24h": 43.49497
         },
         {
             "name": "OKB",
             "symbol": "okb",
-            "change_24h": 11.59645
+            "change_24h": 7.42265
         },
         {
             "name": "Toncoin",
             "symbol": "ton",
-            "change_24h": 6.8855
+            "change_24h": 3.08981
         }
     ],
     "top_losers": [
         {
             "name": "Zcash",
             "symbol": "zec",
-            "change_24h": -5.47957
+            "change_24h": -9.08366
         },
         {
-            "name": "Hyperliquid",
-            "symbol": "hype",
-            "change_24h": -4.34723
+            "name": "World Liberty Financial",
+            "symbol": "wlfi",
+            "change_24h": -6.60929
         },
         {
-            "name": "Ondo",
-            "symbol": "ondo",
-            "change_24h": -4.1868
+            "name": "NEAR Protocol",
+            "symbol": "near",
+            "change_24h": -5.69078
         }
     ],
     "highest_volume": {
         "name": "Tether",
         "symbol": "usdt",
-        "volume_usd": 42938747894
+        "volume_usd": 65249504757
     }
 }
