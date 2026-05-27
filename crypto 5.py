@@ -24,19 +24,26 @@ def retry(max_attempts=3, delay=2):
         return wrapper
     return decorator
 
+API_URL = "https://api.coingecko.com/api/v3/coins/markets"
 
 # Запрос данных по API
 @retry(max_attempts=3, delay=2)
-def get_data():
+def get_data(vs_currency="usd", order="market_cap_desc", per_page=50, page_number=1):
+    params = {
+        "vs_currency": vs_currency,
+        "order": order,
+        "per_page": per_page,
+        "page": page_number
+    }
     with console.status("Получение данных", spinner="aesthetic"):
-        page = requests.get("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1")
-        page.raise_for_status()
-        data = page.json()
+        response = requests.get(API_URL, params=params)
+        response.raise_for_status()
+        data = response.json()
         return data
 
 
 # Ищем Изменения цены за 24 часа
-def price_change_24h(data):
+def filter_coins_with_price_change(data):
     clean_data = []
     for coin in data:
         if coin ["price_change_percentage_24h"] is not None:
@@ -44,16 +51,15 @@ def price_change_24h(data):
     return clean_data
 
 
-# ТОП лидеров роста (Вычисление)
-def top_price_up_top(clean_data):
-    top_price_up = sorted(clean_data, key=lambda k: k["price_change_percentage_24h"], reverse=True)
-    return top_price_up[:3]
+# Сортировка по убыванию/возрастанию
+def get_top_price_changes(clean_data, limit=3, reverse=True):
+    sorted_data = sorted(
+        clean_data,
+        key=lambda coin: coin["price_change_percentage_24h"],
+        reverse=reverse
+    )
 
-
-# ТОП лидеров падения (Вычисление)
-def top_price_down_top(clean_data):
-    top_price_down = sorted(clean_data, key=lambda k: k["price_change_percentage_24h"], reverse=False)
-    return top_price_down[:3]
+    return sorted_data[:limit]
 
 
 # Лидер по объёму торгов (Вычисление)
@@ -68,7 +74,7 @@ def total_market_cap(clean_data):
 
 
 # Вывод в таблицу
-def render_report(top_up, top_down, volume, market_cap):
+def build_report_table(top_up, top_down, volume, market_cap):
     table = Table(title="[bold]Крипто мониторинг рынка[/bold]")
     table.add_column("[bold]ТОП лидеров роста.[/bold]", no_wrap=True)
     table.add_column("[bold]ТОП лидеров падения.[/bold]", no_wrap=True)
@@ -79,7 +85,7 @@ def render_report(top_up, top_down, volume, market_cap):
                     "[red]" + "\n".join(f"{c['name']} {c['price_change_percentage_24h']} %" for c in top_down) + "[/red]",
                     "[yellow]" + f"{volume['name']} ${volume['total_volume']}" + "[/yellow]",
                     "[blue]" + f"${str(market_cap)}" + "[/blue]")
-    console.print(table)
+    return table
 
 
 
@@ -123,12 +129,13 @@ def save_report(report, filename="crypto_report.json"):
 # Точка входа в программу
 def main():
     data = get_data()
-    clean_data = price_change_24h(data)
-    top_up = top_price_up_top(clean_data)
-    top_down = top_price_down_top(clean_data)
+    clean_data = filter_coins_with_price_change(data)
+    top_up = get_top_price_changes(clean_data, limit=3, reverse=True)
+    top_down = get_top_price_changes(clean_data, limit=3, reverse=False)
     volume = top_total_volume(clean_data)
     market_cap = total_market_cap(clean_data)
-    render_report(top_up, top_down, volume, market_cap)
+    table = build_report_table(top_up, top_down, volume, market_cap)
+    console.print(table)
     top_gainers = build_top_list(top_up)
     top_losers = build_top_list(top_down)
     highest_volume = build_highest_volume(volume)
