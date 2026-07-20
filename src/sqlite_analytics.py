@@ -3,7 +3,7 @@ import sqlite3
 
 class SqliteAnalytics:
 
-    def __init__(self, db_name="crypto.db"):
+    def __init__(self, db_name):
         self.db_name = db_name
 
     def list_snapshots(self):

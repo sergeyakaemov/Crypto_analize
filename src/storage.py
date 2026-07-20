@@ -38,7 +38,7 @@ class CsvStorage(BaseStorage):
 
 
 class SqliteStorage(BaseStorage):
-    def __init__(self, db_name="crypto.db"):
+    def __init__(self, db_name):
         self.db_name = db_name
         self.create_tables()
 

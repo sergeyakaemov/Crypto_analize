@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 import time
 from src.settings import settings, StorageType
 from src.storage import (BaseStorage, JsonStorage, CsvStorage,)
+from src.sqlite_analytics import SqliteAnalytics
 
 
 def retry(max_attempts=3, delay=2):
@@ -306,6 +307,21 @@ class CryptoApp:
 
 app = typer.Typer()
 
+@app.command()
+def list_snapshots():
+
+    analytics = SqliteAnalytics(settings.database)
+
+    snapshots = analytics.list_snapshots()
+
+    for snapshot in snapshots:
+
+        print(
+            f"ID: {snapshot[0]} | "
+            f"Дата: {snapshot[1]} | "
+            f"Монет: {snapshot[2]}"
+        )
+
 APIS = {
     "coingecko": CoinGeckoAPI,
     "coinmarketcap": CoinMarketCapAPI,
@@ -351,7 +367,11 @@ def run(
     report_builder = ReportBuilder()
 
     storage_class = STORAGES[settings.storage]
-    storage = storage_class()
+
+    if settings.storage == StorageType.SQLITE:
+        storage = storage_class(settings.database)
+    else:
+        storage = storage_class()
 
     with CryptoApp(
         client,
@@ -364,6 +384,21 @@ def run(
         top,
     ) as app:
         app.run()
+
+
+@app.command()
+def compare_snapshots(id1: int, id2: int):
+
+    analytics = SqliteAnalytics(settings.database)
+
+    result = analytics.compare_snapshots(id1, id2)
+
+    for symbol, old_price, new_price, difference in result:
+        print(
+            f"{symbol}: "
+            f"{old_price} -> {new_price} "
+            f"({difference:+})"
+        )
 
 
 if __name__ == "__main__":

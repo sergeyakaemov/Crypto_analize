@@ -15,7 +15,7 @@ class Settings:
 
     def __init__(self):
         self.storage = StorageType(os.getenv("STORAGE", "json"))
+        self.database = os.getenv("DATABASE", "crypto.db")
 
 
 settings = Settings()
-
