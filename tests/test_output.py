@@ -1,16 +1,14 @@
-from pygments.lexers.csound import newline
-
-from src.crypto import JsonOutput
+from src.crypto import JsonStorage
 from src.crypto import ConsoleOutput
-from src.crypto import CsvOutput
+from src.crypto import CsvStorage
 
 
 def test_json_output(mocker):
     mock_open = mocker.mock_open()
     mocker.patch("builtins.open", mock_open)
-    output = JsonOutput()
+    storage = JsonStorage("test.json")
     report = {"coins_count": 2}
-    output.save(report, filename="test.json")
+    storage.save(report)
     mock_open.assert_called_once_with("test.json", "w", encoding="utf-8")
 
 
@@ -37,19 +35,19 @@ def test_console_output(mocker):
 def test_csv_output(mocker):
     mock_open = mocker.mock_open()
     mocker.patch("builtins.open", mock_open)
-    output = CsvOutput()
+    storage = CsvStorage("test.csv")
     report = {
         "generated_at": "2026-01-01",
         "coins_count": 2,
         "market_cap": 3000000
     }
-    output.save(report, filename="test.csv")
+    storage.save(report)
     mock_open.assert_called_once_with("test.csv", "w", newline="", encoding="utf-8")
 
 
 def test_output_polymorphism(mocker):
     mock_console = mocker.Mock()
-    outputs = [JsonOutput(), CsvOutput(), ConsoleOutput(mock_console)]
+    outputs = [JsonStorage(), CsvStorage(), ConsoleOutput(mock_console)]
     report = {
         "top_up": [],
         "top_down": [],

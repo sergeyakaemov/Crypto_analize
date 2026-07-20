@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 import time
 
 
+
 def retry(max_attempts=3, delay=2):
     def decorator(func):
         def wrapper(*args, **kwargs):
@@ -18,22 +19,37 @@ def retry(max_attempts=3, delay=2):
                 try:
                     return func(*args, **kwargs)
                 except requests.RequestException as error:
-                    print("Ошибка: " + str(error) + ". Попытка " + str(attempt + 1) + "/" + str(max_attempts))
+                    print(
+                        "Ошибка: "
+                        + str(error)
+                        + ". Попытка "
+                        + str(attempt + 1)
+                        + "/"
+                        + str(max_attempts)
+                    )
                     time.sleep(delay)
-            raise requests.RequestException("Не удалось выполнить запрос после "+ str(max_attempts)+ " попыток")
+            raise requests.RequestException(
+                "Не удалось выполнить запрос после "
+                + str(max_attempts)
+                + " попыток"
+            )
+
         return wrapper
+
     return decorator
 
 
-class BaseAPI:
+class BaseAPI(ABC):
     URL = str
 
     @abstractmethod
     def get_params(self):
         pass
+
     @abstractmethod
     def get_headers(self):
         pass
+
     @abstractmethod
     def normalize(self, data):
         pass
@@ -57,7 +73,7 @@ class CoinGeckoAPI(BaseAPI):
             "vs_currency": "usd",
             "order": "market_cap_desc",
             "per_page": 50,
-            "page": 1
+            "page": 1,
         }
 
     def get_headers(self):
@@ -66,13 +82,13 @@ class CoinGeckoAPI(BaseAPI):
     def normalize(self, data):
         return [
             Coin(
-                name = c["name"],
-                symbol = c["symbol"],
-                current_price = c["current_price"],
-                price_change_percentage_24h = c["price_change_percentage_24h"],
-                market_cap = c["market_cap"],
-                total_volume = c["total_volume"]
-        )
+                name=c["name"],
+                symbol=c["symbol"],
+                current_price=c["current_price"],
+                price_change_percentage_24h=c["price_change_percentage_24h"],
+                market_cap=c["market_cap"],
+                total_volume=c["total_volume"],
+            )
             for c in data
         ]
 
@@ -85,7 +101,7 @@ class CoinMarketCapAPI(BaseAPI):
         return {
             "start": "1",
             "limit": 10,
-            "convert": "USD"
+            "convert": "USD",
         }
 
     def get_headers(self):
@@ -97,12 +113,12 @@ class CoinMarketCapAPI(BaseAPI):
     def normalize(self, data):
         return [
             Coin(
-                name = c["name"],
-                symbol = c["symbol"],
-                current_price = c["quote"]["USD"]["price"],
-                price_change_percentage_24h = c["quote"]["USD"]["percent_change_24h"],
-                market_cap = c["quote"]["USD"]["market_cap"],
-                total_volume = c["quote"]["USD"]["volume_24h"]
+                name=c["name"],
+                symbol=c["symbol"],
+                current_price=c["quote"]["USD"]["price"],
+                price_change_percentage_24h=c["quote"]["USD"]["percent_change_24h"],
+                market_cap=c["quote"]["USD"]["market_cap"],
+                total_volume=c["quote"]["USD"]["volume_24h"],
             )
             for c in data["data"]
         ]
@@ -114,7 +130,11 @@ class CryptoProcessor:
         return [c for c in data if c.price_change_percentage_24h is not None]
 
     def get_top_price_changes(self, data, limit=3, reverse=True):
-        return sorted(data, key=lambda c: c.price_change_percentage_24h, reverse=reverse)[:limit]
+        return sorted(
+            data,
+            key=lambda c: c.price_change_percentage_24h,
+            reverse=reverse,
+        )[:limit]
 
     def top_total_volume(self, data):
         return max(data, key=lambda c: c.total_volume)
@@ -124,7 +144,15 @@ class CryptoProcessor:
 
 
 class Coin:
-    def __init__(self, name, symbol, current_price, price_change_percentage_24h, market_cap, total_volume):
+    def __init__(
+        self,
+        name,
+        symbol,
+        current_price,
+        price_change_percentage_24h,
+        market_cap,
+        total_volume,
+    ):
         self.name = name
         self.symbol = symbol
         self.current_price = current_price
@@ -145,10 +173,81 @@ class Coin:
         return self.__dict__
 
 
-class BaseOutput:
+class BaseOutput(ABC):
+
+    @abstractmethod
+    def save(self, report: dict):
+        pass
+
+
+class ConsoleOutput(BaseOutput):
+
+    def __init__(self, console):
+        self.console = console
 
     def save(self, report: dict):
-        raise NotImplementedError
+        table = Table(title="[bold]Крипто мониторинг рынка[/bold]")
+
+        table.add_column("[bold]ТОП лидеров роста[/bold]")
+        table.add_column("[bold]ТОП лидеров падения[/bold]")
+        table.add_column("[bold]Лидер по объёму торгов[/bold]")
+        table.add_column("[bold]Суммарная капитализация 50 монет[/bold]")
+
+        top_up = "\n".join(
+            f"{c['name']} {c['price_change_percentage_24h']} %"
+            for c in report["top_up"]
+        )
+
+        top_down = "\n".join(
+            f"{c['name']} {c['price_change_percentage_24h']} %"
+            for c in report["top_down"]
+        )
+
+        volume = (
+            f"{report['volume_leader']['name']} "
+            f"${report['volume_leader']['total_volume']}"
+        )
+
+        table.add_row(
+            f"[green]{top_up}[/green]",
+            f"[red]{top_down}[/red]",
+            f"[yellow]{volume}[/yellow]",
+            f"[blue]${report['market_cap']}[/blue]",
+        )
+
+        self.console.print(table)
+
+
+class BaseStorage(ABC):
+
+    @abstractmethod
+    def save(self, report: dict):
+        pass
+
+
+class JsonStorage(BaseStorage):
+
+    def __init__(self, filename="report.json"):
+        self.filename = filename
+
+    def save(self, report: dict):
+        with open(self.filename, "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=4, ensure_ascii=False)
+
+
+class CsvStorage(BaseStorage):
+
+    def __init__(self, filename="report.csv"):
+        self.filename = filename
+
+    def save(self, report: dict):
+        with open(self.filename, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+
+            writer.writerow(["metric", "value"])
+            writer.writerow(["generated_at", report["generated_at"]])
+            writer.writerow(["coins_count", report["coins_count"]])
+            writer.writerow(["market_cap", report["market_cap"]])
 
 
 class ReportBuilder:
@@ -163,51 +262,26 @@ class ReportBuilder:
             "volume_leader": volume.to_dict(),
         }
 
-class ConsoleOutput(BaseOutput):
-
-    def __init__(self, console):
-        self.console = console
-
-    def save(self, report: dict):
-        table = Table(title="[bold]Крипто мониторинг рынка[/bold]")
-        table.add_column("[bold]ТОП лидеров роста[/bold]")
-        table.add_column("[bold]ТОП лидеров падения[/bold]")
-        table.add_column("[bold]Лидер по объёму торгов[/bold]")
-        table.add_column("[bold]Суммарная капитализация 50 монет[/bold]")
-        top_up = "\n".join(f"{c['name']} {c['price_change_percentage_24h']} %"for c in report["top_up"])
-        top_down = "\n".join(f"{c['name']} {c['price_change_percentage_24h']} %"for c in report["top_down"])
-        volume = f"{report['volume_leader']['name']} ${report['volume_leader']['total_volume']}"
-        table.add_row(f"[green]{top_up}[/green]", f"[red]{top_down}[/red]", f"[yellow]{volume}[/yellow]", f"[blue]${report['market_cap']}[/blue]")
-        self.console.print(table)
-
-
-class JsonOutput(BaseOutput):
-
-    def save(self, report: dict, filename="report.json"):
-        with open(filename, "w", encoding="utf-8") as f:
-            json.dump(report, f, indent=4, ensure_ascii=False)
-
-
-class CsvOutput(BaseOutput):
-
-    def save(self, report: dict, filename="report.csv"):
-
-        with open(filename, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(["metric", "value"])
-            writer.writerow(["generated_at", report["generated_at"]])
-            writer.writerow(["coins_count", report["coins_count"]])
-            writer.writerow(["market_cap", report["market_cap"]])
-
 
 class CryptoApp:
 
-    def __init__(self, client, api, processor, report_builder, output, console, top):
+    def __init__(
+        self,
+        client,
+        api,
+        processor,
+        report_builder,
+        output,
+        storage,
+        console,
+        top,
+    ):
         self.client = client
         self.api = api
         self.processor = processor
         self.report_builder = report_builder
         self.output = output
+        self.storage = storage
         self.console = console
         self.top = top
 
@@ -219,16 +293,40 @@ class CryptoApp:
         raw = self.client.get_data(
             self.api.URL,
             headers=self.api.get_headers(),
-            params=self.api.get_params()
+            params=self.api.get_params(),
         )
 
         data = self.api.normalize(raw)
+
         clean = self.processor.filter_coins_with_price_change(data)
-        top_up = self.processor.get_top_price_changes(clean, limit=self.top, reverse=True)
-        top_down = self.processor.get_top_price_changes(clean, limit=self.top, reverse=False)
+
+        top_up = self.processor.get_top_price_changes(
+            clean,
+            limit=self.top,
+            reverse=True,
+        )
+
+        top_down = self.processor.get_top_price_changes(
+            clean,
+            limit=self.top,
+            reverse=False,
+        )
+
         volume = self.processor.top_total_volume(clean)
         market_cap = self.processor.total_market_cap(clean)
-        report = self.report_builder.build(clean, top_up, top_down, volume, market_cap)
+
+        report = self.report_builder.build(
+            clean,
+            top_up,
+            top_down,
+            volume,
+            market_cap,
+        )
+
+        # Сначала сохраняем
+        self.storage.save(report)
+
+        # Затем отображаем
         self.output.save(report)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -238,42 +336,67 @@ class CryptoApp:
 
 
 app = typer.Typer()
-APIS = {"coingecko": CoinGeckoAPI, "coinmarketcap": CoinMarketCapAPI}
-OUTPUTS = {"console": ConsoleOutput, "json": JsonOutput, "csv": CsvOutput}
+
+APIS = {
+    "coingecko": CoinGeckoAPI,
+    "coinmarketcap": CoinMarketCapAPI,
+}
+
+OUTPUTS = {
+    "console": ConsoleOutput,
+}
+
 
 @app.command()
-def run(source: str = "coingecko",output: str = "console", top: int = 3):
+def run(
+    source: str = "coingecko",
+    output: str = "console",
+    top: int = 3,
+):
 
     load_dotenv()
+
     console = Console()
+
     client = APIClient()
+
     api_class = APIS[source]
     api = api_class()
-    output_class = OUTPUTS[output]
 
-    if output == "console":
-        output_instance = output_class(console)
-    else:
-        output_instance = output_class()
+    output_class = OUTPUTS[output]
+    output_instance = output_class(console)
 
     processor = CryptoProcessor()
     report_builder = ReportBuilder()
-    with CryptoApp(client, api, processor, report_builder, output_instance, console, top) as app:
+
+    # Пока всегда сохраняем в JSON
+    storage = JsonStorage()
+
+    with CryptoApp(
+        client,
+        api,
+        processor,
+        report_builder,
+        output_instance,
+        storage,
+        console,
+        top,
+    ) as app:
         app.run()
+
 
 if __name__ == "__main__":
     app()
 
-# Выбор Ресурсов:
-#--source coingecko
-#--source coinmarketcap
 
-#Формат вывода:
-#--output console
-#--output json
-#--output csv
+# Выбор ресурсов:
+# --source coingecko
+# --source coinmarketcap
 
-#Количество топов (Любое число):
-#--top 3
-#--top 5
-#--top 10
+# Формат вывода:
+# --output console
+
+# Количество топов:
+# --top 3
+# --top 5
+# --top 10
