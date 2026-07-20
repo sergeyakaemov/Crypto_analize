@@ -9,6 +9,7 @@ from rich.table import Table
 from dotenv import load_dotenv
 from abc import ABC, abstractmethod
 import time
+from src.settings import settings, StorageType
 
 
 
@@ -187,7 +188,6 @@ class ConsoleOutput(BaseOutput):
 
     def save(self, report: dict):
         table = Table(title="[bold]Крипто мониторинг рынка[/bold]")
-
         table.add_column("[bold]ТОП лидеров роста[/bold]")
         table.add_column("[bold]ТОП лидеров падения[/bold]")
         table.add_column("[bold]Лидер по объёму торгов[/bold]")
@@ -346,6 +346,10 @@ OUTPUTS = {
     "console": ConsoleOutput,
 }
 
+STORAGES = {
+    StorageType.JSON: JsonStorage,
+}
+
 
 @app.command()
 def run(
@@ -369,8 +373,8 @@ def run(
     processor = CryptoProcessor()
     report_builder = ReportBuilder()
 
-    # Пока всегда сохраняем в JSON
-    storage = JsonStorage()
+    storage_class = STORAGES[settings.storage]
+    storage = storage_class()
 
     with CryptoApp(
         client,
