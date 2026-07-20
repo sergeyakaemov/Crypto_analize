@@ -67,3 +67,42 @@ class SqliteStorage(BaseStorage):
                     REFERENCES snapshots(id)
                 )
             """)
+    def save(self, report: dict):
+        with sqlite3.connect(self.db_name) as conn:
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                INSERT INTO snapshots
+                (created_at, coins_count)
+                VALUES (?, ?)
+                """,
+                (report["generated_at"], report["coins_count"],)
+            )
+            snapshot_id = cursor.lastrowid
+
+            for coin in report["coins"]:
+
+                cursor.execute(
+                    """
+                    INSERT INTO coin_prices
+                    (
+                        snapshot_id,
+                        name,
+                        symbol,
+                        price,
+                        price_change,
+                        market_cap,
+                        total_volume
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        snapshot_id,
+                        coin["name"],
+                        coin["symbol"],
+                        coin["current_price"],
+                        coin["price_change_percentage_24h"],
+                        coin["market_cap"],
+                        coin["total_volume"],
+                    )
+                )

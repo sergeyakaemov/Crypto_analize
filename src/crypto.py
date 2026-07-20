@@ -225,6 +225,7 @@ class ReportBuilder:
             "generated_at": datetime.now().isoformat(),
             "coins_count": len(data),
             "market_cap": market_cap,
+            "coins": [c.to_dict() for c in data],
             "top_up": [c.to_dict() for c in top_up],
             "top_down": [c.to_dict() for c in top_down],
             "volume_leader": volume.to_dict(),
@@ -314,8 +315,16 @@ OUTPUTS = {
     "console": ConsoleOutput,
 }
 
+from src.storage import (
+    JsonStorage,
+    CsvStorage,
+    SqliteStorage,
+)
+
+
 STORAGES = {
     StorageType.JSON: JsonStorage,
+    StorageType.SQLITE: SqliteStorage,
 }
 
 

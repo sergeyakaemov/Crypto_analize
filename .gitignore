@@ -18,3 +18,8 @@ htmlcov/
 # IDE
 .idea/
 .vscode/
+
+*.db
+report.json
+report.csv
+check_db.py
