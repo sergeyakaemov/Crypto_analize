@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 import typer
 import csv
+import contextlib
 from rich.console import Console
 from rich.table import Table
 from dotenv import load_dotenv
@@ -15,6 +16,7 @@ from src.storage import (
     JsonStorage,
     CsvStorage,
     SqliteStorage,
+    connect,
 )
 from src.sqlite_analytics import SqliteAnalytics
 
@@ -344,9 +346,11 @@ app = typer.Typer()
 @app.command()
 def list_snapshots():
 
-    analytics = SqliteAnalytics(settings.database)
+    with connect(settings.database) as connection:
 
-    snapshots = analytics.list_snapshots()
+        analytics = SqliteAnalytics(connection)
+
+        snapshots = analytics.list_snapshots()
 
     for snapshot in snapshots:
 
@@ -367,10 +371,17 @@ OUTPUTS = {
     "csv": CsvOutput,
 }
 
-STORAGES = {
-    StorageType.JSON: JsonStorage,
-    StorageType.SQLITE: SqliteStorage,
-}
+def create_storage(stack):
+    """Фабрика хранилища — единственное место, где читается settings.storage.
+
+    Соединение SQLite регистрируется в ExitStack, чтобы закрыться вместе
+    с остальными ресурсами команды.
+    """
+    if settings.storage == StorageType.SQLITE:
+        connection = stack.enter_context(connect(settings.database))
+        return SqliteStorage(connection)
+
+    return JsonStorage()
 
 
 @app.command()
@@ -395,32 +406,34 @@ def run(
     processor = CryptoProcessor()
     report_builder = ReportBuilder()
 
-    storage_class = STORAGES[settings.storage]
+    with contextlib.ExitStack() as stack:
 
-    if settings.storage == StorageType.SQLITE:
-        storage = storage_class(settings.database)
-    else:
-        storage = storage_class()
+        storage = create_storage(stack)
 
-    with CryptoApp(
-        client,
-        api,
-        processor,
-        report_builder,
-        output_instance,
-        storage,
-        console,
-        top,
-    ) as app:
-        app.run()
+        crypto_app = stack.enter_context(
+            CryptoApp(
+                client,
+                api,
+                processor,
+                report_builder,
+                output_instance,
+                storage,
+                console,
+                top,
+            )
+        )
+
+        crypto_app.run()
 
 
 @app.command()
 def compare_snapshots(id1: int, id2: int):
 
-    analytics = SqliteAnalytics(settings.database)
+    with connect(settings.database) as connection:
 
-    result = analytics.compare_snapshots(id1, id2)
+        analytics = SqliteAnalytics(connection)
+
+        result = analytics.compare_snapshots(id1, id2)
 
     for symbol, old_price, new_price, difference in result:
         print(

@@ -1,14 +1,31 @@
-import json
+import contextlib
 import csv
-from abc import ABC, abstractmethod
+import json
 import sqlite3
-from datetime import datetime
+from abc import ABC, abstractmethod
+
+
+@contextlib.contextmanager
+def connect(db_name):
+    """Открывает соединение с SQLite и гарантированно закрывает его.
+
+    with sqlite3.connect(...) закрывает транзакцию, но не само соединение,
+    поэтому закрываем явно в finally. PRAGMA foreign_keys включается на
+    каждом соединении: по умолчанию SQLite внешние ключи не проверяет.
+    """
+    connection = sqlite3.connect(db_name)
+
+    try:
+        connection.execute("PRAGMA foreign_keys = ON")
+        yield connection
+    finally:
+        connection.close()
 
 
 class BaseStorage(ABC):
 
     @abstractmethod
-    def save(self, report: dict):
+    def save(self, report: dict) -> None:
         pass
 
 
@@ -17,7 +34,7 @@ class JsonStorage(BaseStorage):
     def __init__(self, filename="report.json"):
         self.filename = filename
 
-    def save(self, report: dict):
+    def save(self, report: dict) -> None:
         with open(self.filename, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=4, ensure_ascii=False)
 
@@ -27,7 +44,7 @@ class CsvStorage(BaseStorage):
     def __init__(self, filename="report.csv"):
         self.filename = filename
 
-    def save(self, report: dict):
+    def save(self, report: dict) -> None:
         with open(self.filename, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
 
@@ -38,13 +55,20 @@ class CsvStorage(BaseStorage):
 
 
 class SqliteStorage(BaseStorage):
-    def __init__(self, db_name):
-        self.db_name = db_name
+    """Принимает готовое соединение.
+
+    Сам его не открывает и не закрывает: этим управляет вызывающий код
+    через connect(). Благодаря этому тесты передают сюда
+    sqlite3.connect(":memory:") и работают с той же базой, что и аналитика.
+    """
+
+    def __init__(self, connection):
+        self.connection = connection
         self.create_tables()
 
-    def create_tables(self):
-        with sqlite3.connect(self.db_name) as conn:
-            conn.execute("""
+    def create_tables(self) -> None:
+        with self.connection:
+            self.connection.execute("""
                 CREATE TABLE IF NOT EXISTS snapshots (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     created_at TEXT NOT NULL,
@@ -52,7 +76,7 @@ class SqliteStorage(BaseStorage):
                 )
             """)
 
-            conn.execute("""
+            self.connection.execute("""
             CREATE TABLE IF NOT EXISTS coin_prices (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     snapshot_id INTEGER NOT NULL,
@@ -67,9 +91,10 @@ class SqliteStorage(BaseStorage):
                     REFERENCES snapshots(id)
                 )
             """)
-    def save(self, report: dict):
-        with sqlite3.connect(self.db_name) as conn:
-            cursor = conn.cursor()
+
+    def save(self, report: dict) -> None:
+        with self.connection:
+            cursor = self.connection.cursor()
 
             cursor.execute("""
                 INSERT INTO snapshots
