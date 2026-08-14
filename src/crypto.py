@@ -10,7 +10,12 @@ from dotenv import load_dotenv
 from abc import ABC, abstractmethod
 import time
 from src.settings import settings, StorageType
-from src.storage import (BaseStorage, JsonStorage, CsvStorage,)
+from src.storage import (
+    BaseStorage,
+    JsonStorage,
+    CsvStorage,
+    SqliteStorage,
+)
 from src.sqlite_analytics import SqliteAnalytics
 
 
@@ -361,13 +366,6 @@ OUTPUTS = {
     "json": JsonOutput,
     "csv": CsvOutput,
 }
-
-from src.storage import (
-    JsonStorage,
-    CsvStorage,
-    SqliteStorage,
-)
-
 
 STORAGES = {
     StorageType.JSON: JsonStorage,
