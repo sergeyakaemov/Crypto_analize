@@ -178,7 +178,7 @@ class Coin:
 class BaseOutput(ABC):
 
     @abstractmethod
-    def save(self, report: dict):
+    def save(self, report: dict) -> None:
         pass
 
 
@@ -187,7 +187,7 @@ class ConsoleOutput(BaseOutput):
     def __init__(self, console):
         self.console = console
 
-    def save(self, report: dict):
+    def save(self, report: dict) -> None:
         table = Table(title="[bold]Крипто мониторинг рынка[/bold]")
         table.add_column("[bold]ТОП лидеров роста[/bold]")
         table.add_column("[bold]ТОП лидеров падения[/bold]")
@@ -217,6 +217,35 @@ class ConsoleOutput(BaseOutput):
         )
 
         self.console.print(table)
+
+
+# Формат вывода и место хранения — разные вещи: одни и те же данные
+# можно показать в файле независимо от того, куда их сохранил storage.
+# Сериализацию не дублируем, а переиспользуем из слоя хранилища.
+class JsonOutput(BaseOutput):
+
+    def __init__(self, console, filename="report.json"):
+        self.console = console
+        self.storage = JsonStorage(filename)
+
+    def save(self, report: dict) -> None:
+        self.storage.save(report)
+        self.console.print(
+            f"[green]Отчёт сохранён в {self.storage.filename}[/green]"
+        )
+
+
+class CsvOutput(BaseOutput):
+
+    def __init__(self, console, filename="report.csv"):
+        self.console = console
+        self.storage = CsvStorage(filename)
+
+    def save(self, report: dict) -> None:
+        self.storage.save(report)
+        self.console.print(
+            f"[green]Отчёт сохранён в {self.storage.filename}[/green]"
+        )
 
 
 class ReportBuilder:
@@ -329,6 +358,8 @@ APIS = {
 
 OUTPUTS = {
     "console": ConsoleOutput,
+    "json": JsonOutput,
+    "csv": CsvOutput,
 }
 
 from src.storage import (
@@ -411,6 +442,8 @@ if __name__ == "__main__":
 
 # Формат вывода:
 # --output console
+# --output json
+# --output csv
 
 # Количество топов:
 # --top 3
