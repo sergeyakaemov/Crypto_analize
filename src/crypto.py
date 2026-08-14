@@ -346,19 +346,28 @@ app = typer.Typer()
 @app.command()
 def list_snapshots():
 
+    console = Console()
+
     with connect(settings.database) as connection:
 
         analytics = SqliteAnalytics(connection)
 
         snapshots = analytics.list_snapshots()
 
-    for snapshot in snapshots:
+    table = Table(title="[bold]Сохранённые снимки[/bold]")
+    table.add_column("[bold]ID[/bold]")
+    table.add_column("[bold]Дата[/bold]")
+    table.add_column("[bold]Монет[/bold]")
 
-        print(
-            f"ID: {snapshot[0]} | "
-            f"Дата: {snapshot[1]} | "
-            f"Монет: {snapshot[2]}"
+    for snapshot_id, created_at, coins_count in snapshots:
+
+        table.add_row(
+            str(snapshot_id),
+            str(created_at),
+            str(coins_count),
         )
+
+    console.print(table)
 
 APIS = {
     "coingecko": CoinGeckoAPI,
@@ -429,6 +438,8 @@ def run(
 @app.command()
 def compare_snapshots(id1: int, id2: int):
 
+    console = Console()
+
     with connect(settings.database) as connection:
 
         analytics = SqliteAnalytics(connection)
@@ -436,10 +447,13 @@ def compare_snapshots(id1: int, id2: int):
         result = analytics.compare_snapshots(id1, id2)
 
     for symbol, old_price, new_price, difference in result:
-        print(
+
+        color = "green" if difference >= 0 else "red"
+
+        console.print(
             f"{symbol}: "
             f"{old_price} -> {new_price} "
-            f"({difference:+})"
+            f"[{color}]({difference:+})[/{color}]"
         )
 
 
