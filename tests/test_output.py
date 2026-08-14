@@ -1,6 +1,9 @@
 from src.crypto import JsonStorage
 from src.crypto import ConsoleOutput
 from src.crypto import CsvStorage
+from src.crypto import JsonOutput
+from src.crypto import CsvOutput
+from src.crypto import OUTPUTS
 
 
 def test_json_output(mocker):
@@ -63,6 +66,35 @@ def test_output_polymorphism(mocker):
             out.console = mock_console
         out.save(report)
     assert mock_open.call_count == 2
+    mock_console.print.assert_called_once()
+
+
+def test_outputs_registry_has_all_formats():
+    assert set(OUTPUTS) == {"console", "json", "csv"}
+
+
+def test_json_output_writes_file(mocker):
+    mock_open = mocker.mock_open()
+    mocker.patch("builtins.open", mock_open)
+    mock_console = mocker.Mock()
+    output = JsonOutput(mock_console, "test.json")
+    output.save({"coins_count": 2})
+    mock_open.assert_called_once_with("test.json", "w", encoding="utf-8")
+    mock_console.print.assert_called_once()
+
+
+def test_csv_output_writes_file(mocker):
+    mock_open = mocker.mock_open()
+    mocker.patch("builtins.open", mock_open)
+    mock_console = mocker.Mock()
+    output = CsvOutput(mock_console, "test.csv")
+    report = {
+        "generated_at": "2026-01-01",
+        "coins_count": 2,
+        "market_cap": 3000000
+    }
+    output.save(report)
+    mock_open.assert_called_once_with("test.csv", "w", newline="", encoding="utf-8")
     mock_console.print.assert_called_once()
 
 
