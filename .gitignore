@@ -22,4 +22,5 @@ htmlcov/
 *.db
 report.json
 report.csv
+crypto_report.json
 check_db.py
