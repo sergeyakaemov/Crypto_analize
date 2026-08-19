@@ -42,6 +42,33 @@ class SqliteAnalytics:
 
         return cursor.fetchone() is not None
 
+    def missing_snapshots(self, *ids):
+        """Возвращает те из переданных id, которых нет в базе."""
+
+        # Число плейсхолдеров зависит от количества id, а не от их значений:
+        # в текст запроса попадает только строка вида "?, ?", сами id
+        # уходят параметрами.
+        placeholders = ", ".join("?" for _ in ids)
+
+        cursor = self.connection.cursor()
+
+        cursor.execute(
+            f"""
+            SELECT id
+            FROM snapshots
+            WHERE id IN ({placeholders})
+            """,
+            ids
+        )
+
+        found = {row[0] for row in cursor.fetchall()}
+
+        return [
+            snapshot_id
+            for snapshot_id in ids
+            if snapshot_id not in found
+        ]
+
     def price_history(self, symbol):
 
         cursor = self.connection.cursor()

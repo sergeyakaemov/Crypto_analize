@@ -56,6 +56,43 @@ def test_list_snapshots_without_database_leaves_no_file(mocker, tmp_path):
     assert not path.exists()
 
 
+def test_compare_snapshots_rejects_equal_ids(database):
+    """Сравнение снимка с самим собой даёт колонку нулей,
+    которая выглядит как «рынок замер»."""
+
+    result = runner.invoke(app, ["compare-snapshots", "1", "1"])
+
+    assert result.exit_code == 1
+
+
+def test_compare_snapshots_reports_missing_ids(database):
+    """Несуществующий id раньше давал пустой вывод без объяснений."""
+
+    result = runner.invoke(app, ["compare-snapshots", "1", "7"])
+
+    assert result.exit_code == 1
+    assert "7" in result.output
+
+
+def test_compare_snapshots_shows_direction(mocker, tmp_path, make_coin, make_report):
+    """Счастливый путь: проверки не мешают, а направление сравнения
+    печатается явно — знак разницы зависит от порядка id."""
+
+    path = tmp_path / "two.db"
+
+    with connect(str(path)) as connection:
+        storage = SqliteStorage(connection)
+        storage.save(make_report([make_coin(price=100)]))
+        storage.save(make_report([make_coin(price=105)]))
+
+    mocker.patch.object(settings, "database", str(path))
+
+    result = runner.invoke(app, ["compare-snapshots", "1", "2"])
+
+    assert result.exit_code == 0
+    assert "Снимок 1 -> снимок 2" in result.output
+
+
 def test_list_snapshots_shows_saved_snapshots(database):
     """Счастливый путь: проверка базы не ломает обычный вывод."""
 

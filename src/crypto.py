@@ -477,11 +477,38 @@ def compare_snapshots(id1: int, id2: int):
 
     console = Console()
 
-    with connect(settings.database) as connection:
+    if id1 == id2:
+        console.print(
+            f"[red]Снимок {id1} сравнивается сам с собой: "
+            f"разница всегда нулевая[/red]"
+        )
+        raise typer.Exit(code=1)
 
-        analytics = SqliteAnalytics(connection)
+    with contextlib.ExitStack() as stack:
+
+        analytics = open_snapshots(stack, console)
+
+        missing = analytics.missing_snapshots(id1, id2)
+
+        if missing:
+            console.print(
+                "[red]В базе нет снимков с id: "
+                + ", ".join(str(snapshot_id) for snapshot_id in missing)
+                + ". Список доступных покажет list-snapshots[/red]"
+            )
+            raise typer.Exit(code=1)
 
         result = analytics.compare_snapshots(id1, id2)
+
+    if not result:
+        console.print(
+            f"[yellow]У снимков {id1} и {id2} нет общих монет[/yellow]"
+        )
+        return
+
+    # Порядок аргументов задаёт смысл знака: пишем его явно, иначе
+    # перепутанные местами id молча покажут рост как падение.
+    console.print(f"[bold]Снимок {id1} -> снимок {id2}[/bold]")
 
     for symbol, old_price, new_price, difference in result:
 
