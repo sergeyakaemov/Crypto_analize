@@ -72,42 +72,30 @@ class SqliteAnalytics:
 
         return cursor.fetchall()
 
-    # Направление сортировки нельзя передать параметром ?, а собирать запрос
-    # через f-string нельзя, поэтому держим два готовых текста запроса.
-    TOP_PRICE_CHANGES_UP = """
-        SELECT
-            symbol,
-            price,
-            price_change
-        FROM coin_prices
-        WHERE snapshot_id = (
-            SELECT MAX(id)
-            FROM snapshots
-        )
-        ORDER BY price_change DESC
-        LIMIT ?
-    """
 
-    TOP_PRICE_CHANGES_DOWN = """
-        SELECT
-            symbol,
-            price,
-            price_change
-        FROM coin_prices
-        WHERE snapshot_id = (
-            SELECT MAX(id)
-            FROM snapshots
-        )
-        ORDER BY price_change ASC
-        LIMIT ?
-    """
+    SORT_ORDER = {
+        True: "DESC",
+        False: "ASC",
+    }
+
+    TOP_PRICE_CHANGES = """
+          SELECT
+              symbol,
+              price,
+              price_change
+          FROM coin_prices
+          WHERE snapshot_id = (
+              SELECT MAX(id)
+              FROM snapshots
+          )
+          ORDER BY price_change {order}
+          LIMIT ?
+      """
 
     def top_price_changes(self, limit=5, reverse=True):
 
-        query = (
-            self.TOP_PRICE_CHANGES_UP
-            if reverse
-            else self.TOP_PRICE_CHANGES_DOWN
+        query = self.TOP_PRICE_CHANGES.format(
+            order=self.SORT_ORDER[reverse]
         )
 
         cursor = self.connection.cursor()
