@@ -24,24 +24,27 @@ from src.sqlite_analytics import SqliteAnalytics
 def retry(max_attempts=3, delay=2):
     def decorator(func):
         def wrapper(*args, **kwargs):
-            for attempt in range(max_attempts):
+            last_error = None
+
+            for attempt in range(1, max_attempts + 1):
                 try:
                     return func(*args, **kwargs)
+                except requests.HTTPError as error:
+                    if 400 <= error.response.status_code < 500:
+                        raise
+                    last_error = error
+
                 except requests.RequestException as error:
-                    print(
-                        "Ошибка: "
-                        + str(error)
-                        + ". Попытка "
-                        + str(attempt + 1)
-                        + "/"
-                        + str(max_attempts)
-                    )
+                    last_error = error
+
+                print(f"Ошибка: {last_error}. Попытка {attempt}/{max_attempts}")
+
+                if attempt < max_attempts:
                     time.sleep(delay)
+
             raise requests.RequestException(
-                "Не удалось выполнить запрос после "
-                + str(max_attempts)
-                + " попыток"
-            )
+                f"Не удалось выполнить запрос после {max_attempts} попыток"
+            ) from last_error
 
         return wrapper
 
