@@ -1,0 +1,26 @@
+# Virtual env
+.venv/
+
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# Pytest
+.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+
+*.db
+report.json
+report.csv
+crypto_report.json
+check_db.py
