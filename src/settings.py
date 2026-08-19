@@ -14,7 +14,17 @@ class StorageType(Enum):
 class Settings:
 
     def __init__(self):
-        self.storage = StorageType(os.getenv("STORAGE", "json"))
+        raw_storage = os.getenv("STORAGE", "json")
+
+        try:
+            self.storage = StorageType(raw_storage)
+        except ValueError:
+            allowed = ", ".join(item.value for item in StorageType)
+            raise ValueError(
+                f"Неизвестное значение STORAGE={raw_storage!r}. "
+                f"Допустимо: {allowed}"
+            ) from None
+
         self.database = os.getenv("DATABASE", "crypto.db")
 
 
