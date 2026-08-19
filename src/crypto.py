@@ -396,6 +396,20 @@ def run(
 
     load_dotenv()
 
+    # Без проверки OUTPUTS[output] роняет голый KeyError с трейсбеком.
+    # BadParameter печатает обычную ошибку командной строки и подсказку.
+    if source not in APIS:
+        raise typer.BadParameter(
+            f"{source!r}. Доступные источники: " + ", ".join(APIS),
+            param_hint="--source",
+        )
+
+    if output not in OUTPUTS:
+        raise typer.BadParameter(
+            f"{output!r}. Доступные форматы: " + ", ".join(OUTPUTS),
+            param_hint="--output",
+        )
+
     console = Console()
 
     client = APIClient()
