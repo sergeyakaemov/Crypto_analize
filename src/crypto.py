@@ -305,11 +305,16 @@ class CryptoApp:
             reverse=False,
         )
 
-        volume = self.processor.top_total_volume(clean)
-        market_cap = self.processor.total_market_cap(clean)
+        # Топы строятся по clean: для сортировки нужно известное
+        # изменение цены. Всё остальное считается по data, то есть по всем
+        # загруженным монетам — иначе из суммы, из счётчика и из поиска
+        # лидера по объёму выпадают монеты, у которых API не отдал
+        # price_change_percentage_24h.
+        volume = self.processor.top_total_volume(data)
+        market_cap = self.processor.total_market_cap(data)
 
         report = self.report_builder.build(
-            clean,
+            data,
             top_up,
             top_down,
             volume,
