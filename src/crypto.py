@@ -335,14 +335,43 @@ class CryptoApp:
 
 app = typer.Typer()
 
+def open_snapshots(stack, console):
+    """Открывает базу со снимками для команд аналитики.
+
+    sqlite3.connect() создаёт пустой файл на месте отсутствующей базы,
+    поэтому наличие файла проверяем до соединения: иначе неудачная
+    команда оставляет после себя мусорный crypto.db. Таблицы создаёт
+    SqliteStorage, аналитика их только читает.
+    """
+    if not os.path.exists(settings.database):
+        console.print(
+            f"[red]База {settings.database} не найдена. "
+            f"Сначала соберите снимок: run со STORAGE=sqlite в .env[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    connection = stack.enter_context(connect(settings.database))
+
+    analytics = SqliteAnalytics(connection)
+
+    if not analytics.snapshots_table_exists():
+        console.print(
+            f"[red]В базе {settings.database} нет таблицы снимков. "
+            f"Сначала соберите снимок: run со STORAGE=sqlite в .env[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    return analytics
+
+
 @app.command()
 def list_snapshots():
 
     console = Console()
 
-    with connect(settings.database) as connection:
+    with contextlib.ExitStack() as stack:
 
-        analytics = SqliteAnalytics(connection)
+        analytics = open_snapshots(stack, console)
 
         snapshots = analytics.list_snapshots()
 

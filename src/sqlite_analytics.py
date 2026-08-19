@@ -25,6 +25,23 @@ class SqliteAnalytics:
 
         return cursor.fetchall()
 
+    def snapshots_table_exists(self):
+        """Проверяет, что схема создана: аналитика таблиц не создаёт."""
+
+        cursor = self.connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'table'
+            AND name = ?
+            """,
+            ("snapshots",)
+        )
+
+        return cursor.fetchone() is not None
+
     def price_history(self, symbol):
 
         cursor = self.connection.cursor()
