@@ -1,9 +1,7 @@
 import os
 import requests
-import json
 from datetime import datetime
 import typer
-import csv
 import contextlib
 from rich.console import Console
 from rich.table import Table
@@ -12,7 +10,6 @@ from abc import ABC, abstractmethod
 import time
 from src.settings import settings, StorageType
 from src.storage import (
-    BaseStorage,
     JsonStorage,
     CsvStorage,
     SqliteStorage,
