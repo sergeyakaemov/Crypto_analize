@@ -229,24 +229,11 @@ class ConsoleOutput(BaseOutput):
 # Формат вывода и место хранения — разные вещи: одни и те же данные
 # можно показать в файле независимо от того, куда их сохранил storage.
 # Сериализацию не дублируем, а переиспользуем из слоя хранилища.
-class JsonOutput(BaseOutput):
+class FileOutput(BaseOutput):
 
-    def __init__(self, console, filename="report.json"):
+    def __init__(self, console, storage):
         self.console = console
-        self.storage = JsonStorage(filename)
-
-    def save(self, report: dict) -> None:
-        self.storage.save(report)
-        self.console.print(
-            f"[green]Отчёт сохранён в {self.storage.filename}[/green]"
-        )
-
-
-class CsvOutput(BaseOutput):
-
-    def __init__(self, console, filename="report.csv"):
-        self.console = console
-        self.storage = CsvStorage(filename)
+        self.storage = storage
 
     def save(self, report: dict) -> None:
         self.storage.save(report)
@@ -374,10 +361,12 @@ APIS = {
     "coinmarketcap": CoinMarketCapAPI,
 }
 
+# Значение — не класс, а способ создать готовый объект по консоли:
+# у ConsoleOutput и FileOutput разные аргументы, лямбда скрывает разницу.
 OUTPUTS = {
-    "console": ConsoleOutput,
-    "json": JsonOutput,
-    "csv": CsvOutput,
+    "console": lambda console: ConsoleOutput(console),
+    "json": lambda console: FileOutput(console, JsonStorage()),
+    "csv": lambda console: FileOutput(console, CsvStorage()),
 }
 
 def create_storage(stack):
@@ -409,8 +398,8 @@ def run(
     api_class = APIS[source]
     api = api_class()
 
-    output_class = OUTPUTS[output]
-    output_instance = output_class(console)
+    make_output = OUTPUTS[output]
+    output_instance = make_output(console)
 
     processor = CryptoProcessor()
     report_builder = ReportBuilder()
