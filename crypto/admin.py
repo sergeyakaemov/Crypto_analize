@@ -1,3 +1,19 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import CoinPrice, Snapshot
+
+
+class CoinPriceInline(admin.TabularInline):
+    model = CoinPrice
+    extra = 0
+
+
+@admin.register(Snapshot)
+class SnapshotAdmin(admin.ModelAdmin):
+    list_display = ('id', 'created_at')
+    inlines = [CoinPriceInline]
+
+
+@admin.register(CoinPrice)
+class CoinPriceAdmin(admin.ModelAdmin):
+    list_display = ('symbol','name', 'price', 'price_change_24h', 'snapshot')
