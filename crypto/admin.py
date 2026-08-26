@@ -10,7 +10,7 @@ class CoinPriceInline(admin.TabularInline):
 
 @admin.register(Snapshot)
 class SnapshotAdmin(admin.ModelAdmin):
-    list_display = ('id', 'created_at')
+    list_display = ('id', 'created_at', 'source')
     inlines = [CoinPriceInline]
 
 

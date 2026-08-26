@@ -28,7 +28,7 @@ class Command(BaseCommand):
 
         rows = source.normalize(response.json())
 
-        snapshot = Snapshot.objects.create()
+        snapshot = Snapshot.objects.create(source=options["source"])
 
         CoinPrice.objects.bulk_create([
             CoinPrice(snapshot=snapshot, **row)

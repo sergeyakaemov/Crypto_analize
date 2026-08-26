@@ -3,6 +3,7 @@ from django.db import models
 
 class Snapshot(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
+    source = models.CharField(max_length=30)
 
     class Meta:
         ordering = ('-created_at',)
