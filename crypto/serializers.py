@@ -33,6 +33,10 @@ class SnapshotDetailSerializer(SnapshotSerializer):
         fields = SnapshotSerializer.Meta.fields + ['prices']
 
 
+class CoinHistorySerializer(CoinPriceSerializer):
+    snapshot_source = serializers.CharField(source='snapshot.source', read_only=True)
+    snapshot_created_at = serializers.DateTimeField(source='snapshot.created_at', read_only=True)
 
-
-
+    class Meta(CoinPriceSerializer.Meta):
+        fields = CoinPriceSerializer.Meta.fields + ['snapshot_source',
+                                                    'snapshot_created_at']
