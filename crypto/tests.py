@@ -40,15 +40,18 @@ class CoinApiTests(APITestCase):
     def test_filter_by_symbol(self):
         response = self.client.get('/api/coins/?symbol=BTC')
 
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
 
     def test_filter_is_case_insensitive(self):
         response = self.client.get('/api/coins/?symbol=btc')
 
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
 
     def test_detail_contains_prices(self):
         response = self.client.get(f'/api/snapshots/{self.snapshot.id}/')
 
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['prices']), 2)
 
