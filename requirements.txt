@@ -10,3 +10,5 @@ pytest-mock==3.15.1
 
 Django==6.1
 psycopg2-binary==2.9.12
+
+djangorestframework==3.18.0

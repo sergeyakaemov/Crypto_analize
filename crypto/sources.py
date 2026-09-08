@@ -8,8 +8,8 @@ class CoinGecko:
         return {
             "vs_currency": "usd",
             "order": "market_cap_desc",
-            "per_page": "50",
-            "page": "1",
+            "per_page": 50,
+            "page": 1,
         }
 
     def headers(self):
@@ -35,7 +35,7 @@ class CoinMarketCap:
     URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
 
     def params(self):
-        return {"start": "1",
+        return {"start": 1,
                 "limit": 50,
                 "convert": "USD"}
 
@@ -59,6 +59,6 @@ class CoinMarketCap:
         ]
 
 SOURCES = {
-    "coingecko": CoinGecko,
+    'coingecko': CoinGecko,
     'coinmarketcap': CoinMarketCap,
 }
