@@ -4,19 +4,18 @@ import requests
 
 from crypto.models import CoinPrice, Snapshot
 from crypto.retry import retry
+from crypto.client import get_json
 from crypto.sources import SOURCES
 
 
 @retry(max_attempts=3, delay=2)
 def fetch(source):
-    response = requests.get(
+    return get_json(
         source.URL,
         params=source.params(),
         headers=source.headers(),
         timeout=30,
     )
-    response.raise_for_status()
-    return response.json()
 
 
 class Command(BaseCommand):
