@@ -1,5 +1,10 @@
 import os
 
+import requests
+
+from crypto.client import get_json
+from crypto.retry import retry
+
 
 class CoinGecko:
     URL = "https://api.coingecko.com/api/v3/coins/markets"
@@ -28,11 +33,20 @@ class CoinGecko:
             for coin in data
         ]
 
-
+    @retry(max_attempts=2, delay=1)
+    def symbol_exists(self, symbol):
+        data = get_json(
+            self.URL,
+            params={"vs_currency": "usd", "symbols": symbol},
+            headers=self.headers(),
+            timeout=5,
+        )
+        return len(data) > 0
 
 
 class CoinMarketCap:
     URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+    MAP_URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/map"
 
     def params(self):
         return {"start": 1,
@@ -57,6 +71,21 @@ class CoinMarketCap:
             }
             for coin in data["data"]
         ]
+    @retry(max_attempts=2, delay=1)
+    def symbol_exists(self, symbol):
+        try:
+            data = get_json(
+                self.MAP_URL,
+                params={"symbol": symbol.upper()},
+                headers=self.headers(),
+                timeout=5,
+            )
+        except requests.HTTPError as error:
+            if error.response.status_code == 400:
+                return False
+            raise
+        return len(data["data"]) > 0
+
 
 SOURCES = {
     'coingecko': CoinGecko,
