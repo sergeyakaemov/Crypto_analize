@@ -1,6 +1,8 @@
 import os
 
 import requests
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 
 from crypto.client import get_json
 from crypto.retry import retry
@@ -71,6 +73,7 @@ class CoinMarketCap:
             }
             for coin in data["data"]
         ]
+
     @retry(max_attempts=2, delay=1)
     def symbol_exists(self, symbol):
         try:
@@ -91,3 +94,13 @@ SOURCES = {
     'coingecko': CoinGecko,
     'coinmarketcap': CoinMarketCap,
 }
+
+
+def get_provider(name=None):
+    """Провайдер биржи по имени; без имени — активный из settings.EXCHANGE_PROVIDER."""
+    name = name or settings.EXCHANGE_PROVIDER
+    if name not in SOURCES:
+        raise ImproperlyConfigured(
+            f"Неизвестный провайдер {name!r}. Доступны: {', '.join(SOURCES)}"
+        )
+    return SOURCES[name]()

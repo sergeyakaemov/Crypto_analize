@@ -1,11 +1,12 @@
 from django.core.management import BaseCommand, CommandError
 from django.db import transaction
+from django.conf import settings
 import requests
 
 from crypto.models import CoinPrice, Snapshot
 from crypto.retry import retry
 from crypto.client import get_json
-from crypto.sources import SOURCES
+from crypto.sources import SOURCES, get_provider
 
 
 @retry(max_attempts=3, delay=2)
@@ -25,12 +26,13 @@ class Command(BaseCommand):
         parser.add_argument(
             "--source",
             choices=SOURCES,
-            default="coingecko",
-            help="Источник данных",
+            default=None,
+            help="Источник данных (по умолчанию EXCHANGE_PROVIDER из .env)",
         )
 
     def handle(self, *args, **options):
-        source = SOURCES[options["source"]]()
+        name = options["source"] or settings.EXCHANGE_PROVIDER
+        source = get_provider(name)
 
         try:
             data = fetch(source)
@@ -40,7 +42,7 @@ class Command(BaseCommand):
         rows = source.normalize(data)
 
         with transaction.atomic():
-            snapshot = Snapshot.objects.create(source=options["source"])
+            snapshot = Snapshot.objects.create(source=name)
             CoinPrice.objects.bulk_create([
                 CoinPrice(snapshot=snapshot, **row)
                 for row in rows
