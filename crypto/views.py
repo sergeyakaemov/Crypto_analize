@@ -1,10 +1,11 @@
-from rest_framework import viewsets
 from .models import Snapshot, CoinPrice
 from .serializers import SnapshotSerializer, SnapshotDetailSerializer, CoinHistorySerializer
+from rest_framework import permissions, viewsets
 
 
-class SnapshotViewSet(viewsets.ModelViewSet):
+class SnapshotViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Snapshot.objects.all()
+    permission_classes = [permissions.AllowAny]
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -14,6 +15,7 @@ class SnapshotViewSet(viewsets.ModelViewSet):
 
 class CoinPriceViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CoinHistorySerializer
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         queryset = CoinPrice.objects.all().order_by('-snapshot__created_at')
