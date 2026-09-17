@@ -11,6 +11,12 @@ def block_network(monkeypatch):
     monkeypatch.setattr(requests, "get", fail)
 
 
+@pytest.fixture(autouse=True)
+def fast_password_hasher(settings):
+    """Быстрый хешер паролей: PBKDF2 намеренно медленный, в тестах это лишнее."""
+    settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+
 @pytest.fixture
 def user(django_user_model):
     return django_user_model.objects.create_user(username="alice", password="pass12345")
