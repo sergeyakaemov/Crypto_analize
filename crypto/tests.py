@@ -6,7 +6,7 @@ from .models import Snapshot, CoinPrice
 class SnapShotApiTests(APITestCase):
     def setUp(self):
         for _ in range(12):
-            Snapshot.objects.create(source='test')
+            Snapshot.objects.create(source='coingecko')
 
     def test_list_is_paginated(self):
         response = self.client.get('/api/snapshots/')
@@ -18,7 +18,7 @@ class SnapShotApiTests(APITestCase):
 class CoinApiTests(APITestCase):
 
     def setUp(self):
-        self.snapshot = Snapshot.objects.create(source='test')
+        self.snapshot = Snapshot.objects.create(source='coingecko')
         CoinPrice.objects.create(
             snapshot=self.snapshot,
             name ='Bitcoin',
