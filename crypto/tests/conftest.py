@@ -8,7 +8,7 @@ def block_network(monkeypatch):
     def fail(*args, **kwargs):
         raise RuntimeError("Реальный HTTP-запрос в тестах запрещён")
 
-    monkeypatch.setattr(requests, "get", fail)
+    monkeypatch.setattr(requests.sessions.Session, "request", fail)
 
 
 @pytest.fixture(autouse=True)

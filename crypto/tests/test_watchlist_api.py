@@ -1,9 +1,9 @@
 import pytest
-import requests
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from crypto import sources
 from crypto.models import WatchlistItem
 
 pytestmark = pytest.mark.django_db
@@ -129,7 +129,7 @@ def test_add_duplicate_returns_409(alice_client, provider):
 
 
 def test_add_when_exchange_down_returns_503(alice_client, provider):
-    provider.symbol_exists.side_effect = requests.Timeout()
+    provider.symbol_exists.side_effect = sources.ProviderError("таймаут")
 
     response = alice_client.post(list_url(), {"symbol": "BTC"})
 

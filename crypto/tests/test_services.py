@@ -1,7 +1,7 @@
 import pytest
-import requests
 
-from crypto import services
+
+from crypto import services, sources
 from crypto.models import WatchlistItem
 
 pytestmark = pytest.mark.django_db
@@ -38,7 +38,7 @@ def test_add_duplicate_raises_without_exchange_call(user, provider):
 
 
 def test_add_when_exchange_down_raises_unavailable(user, provider):
-    provider.symbol_exists.side_effect = requests.Timeout()
+    provider.symbol_exists.side_effect = sources.ProviderError("таймаут")
 
     with pytest.raises(services.ExchangeUnavailable):
         services.add_to_watchlist(user, "BTC")
