@@ -2,9 +2,10 @@ import time
 
 import requests
 
+TOO_MANY_REQUESTS = 429
 
 def retry(max_attempts=3, delay=2):
-    """Повторяет запрос при временных сбоях, но не при ошибках 4xx."""
+    """Повторяет запрос при временных сбоях; из 4xx повторяет только 429."""
     def decorator(func):
         def wrapper(*args, **kwargs):
             last_error = None
@@ -13,7 +14,8 @@ def retry(max_attempts=3, delay=2):
                 try:
                     return func(*args, **kwargs)
                 except requests.HTTPError as error:
-                    if 400 <= error.response.status_code < 500:
+                    status_code = error.response.status_code
+                    if 400 <= status_code < 500 and status_code != TOO_MANY_REQUESTS:
                         raise
                     last_error = error
                 except requests.RequestException as error:
