@@ -32,6 +32,10 @@ class CoinPrice(models.Model):
         return f"{self.symbol.upper()} — {self.price}"
 
 
+def normalize_symbol(symbol):
+    return symbol.strip().upper()
+
+
 class WatchlistItem(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -52,3 +56,7 @@ class WatchlistItem(models.Model):
 
     def __str__(self):
         return f'{self.user} — {self.symbol}'
+
+    def save(self, *args, **kwargs):
+        self.symbol = normalize_symbol(self.symbol)
+        return super().save(*args, **kwargs)
