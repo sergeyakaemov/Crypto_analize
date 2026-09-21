@@ -1,8 +1,11 @@
-import requests
+import logging
+
 from django.db import IntegrityError, transaction
 
-from crypto.models import WatchlistItem
-from crypto.sources import get_provider
+from crypto.models import WatchlistItem, normalize_symbol
+from crypto.sources import ProviderError, get_provider
+
+logger = logging.getLogger(__name__)
 
 
 class WatchlistError(Exception):
@@ -25,10 +28,6 @@ class WatchlistItemNotFound(WatchlistError):
     """Элемента нет или он принадлежит другому пользователю."""
 
 
-def normalize_symbol(symbol):
-    return symbol.strip().upper()
-
-
 def list_watchlist(user):
     return WatchlistItem.objects.filter(user=user)
 
@@ -41,7 +40,8 @@ def add_to_watchlist(user, symbol):
 
     try:
         exists = get_provider().symbol_exists(symbol)
-    except requests.RequestException as error:
+    except ProviderError as error:
+        logger.warning("Биржа не ответила при проверке символа %s: %s", symbol, error)
         raise ExchangeUnavailable(symbol) from error
 
     if not exists:

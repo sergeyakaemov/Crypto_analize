@@ -3,9 +3,26 @@ import os
 import requests
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from functools import wraps
 
 from crypto.client import get_json
 from crypto.retry import retry
+
+
+class ProviderError(Exception):
+    """Биржа не ответила — существование символа неизвестно."""
+
+
+def as_provider_error(func):
+    """Переводит ошибки HTTP-клиента в ProviderError, чтобы наружу не торчал requests."""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except requests.RequestException as error:
+            raise ProviderError(str(error)) from error
+
+    return wrapper
 
 
 class CoinGecko:
@@ -35,6 +52,7 @@ class CoinGecko:
             for coin in data
         ]
 
+    @as_provider_error
     @retry(max_attempts=2, delay=1)
     def symbol_exists(self, symbol):
         data = get_json(
@@ -74,6 +92,7 @@ class CoinMarketCap:
             for coin in data["data"]
         ]
 
+    @as_provider_error
     @retry(max_attempts=2, delay=1)
     def symbol_exists(self, symbol):
         try:
