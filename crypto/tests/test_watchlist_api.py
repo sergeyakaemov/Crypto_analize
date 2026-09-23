@@ -2,6 +2,7 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
+import requests
 
 from crypto import sources
 from crypto.models import WatchlistItem
@@ -130,6 +131,17 @@ def test_add_duplicate_returns_409(alice_client, provider):
 
 def test_add_when_exchange_down_returns_503(alice_client, provider):
     provider.symbol_exists.side_effect = sources.ProviderError("таймаут")
+
+    response = alice_client.post(list_url(), {"symbol": "BTC"})
+
+    assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+
+
+def test_add_when_real_provider_times_out_returns_503(alice_client, mocker, settings):
+    """Без фикстуры provider: проверяем перевод ошибки клиента в ProviderError."""
+    settings.EXCHANGE_PROVIDER = "coingecko"
+    mocker.patch("crypto.sources.get_json", side_effect=requests.Timeout("таймаут"))
+    mocker.patch("crypto.retry.time.sleep")
 
     response = alice_client.post(list_url(), {"symbol": "BTC"})
 

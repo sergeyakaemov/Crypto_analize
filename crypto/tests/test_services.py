@@ -37,6 +37,23 @@ def test_add_duplicate_raises_without_exchange_call(user, provider):
     provider.symbol_exists.assert_not_called()
 
 
+def test_model_normalizes_symbol_on_save(user):
+    item = WatchlistItem.objects.create(user=user, symbol=" btc ")
+
+    item.refresh_from_db()
+    assert item.symbol == "BTC"
+
+
+def test_duplicate_written_past_service_is_caught(user, provider):
+    """Строка заведена мимо сервиса — нормализация в save() всё равно ловит дубль."""
+    WatchlistItem.objects.create(user=user, symbol="btc")
+
+    with pytest.raises(services.AlreadyInWatchlist):
+        services.add_to_watchlist(user, "BTC")
+
+    provider.symbol_exists.assert_not_called()
+
+
 def test_add_when_exchange_down_raises_unavailable(user, provider):
     provider.symbol_exists.side_effect = sources.ProviderError("таймаут")
 
