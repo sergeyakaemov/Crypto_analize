@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
-from .models import Snapshot, CoinPrice
+from crypto.models import Snapshot, CoinPrice
 
 
 class SnapShotApiTests(APITestCase):
