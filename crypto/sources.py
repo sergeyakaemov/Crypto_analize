@@ -1,5 +1,29 @@
 import os
 
+import requests
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+from functools import wraps
+
+from crypto.client import get_json
+from crypto.retry import retry
+
+
+class ProviderError(Exception):
+    """Биржа не ответила — существование символа неизвестно."""
+
+
+def as_provider_error(func):
+    """Переводит ошибки HTTP-клиента в ProviderError, чтобы наружу не торчал requests."""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except requests.RequestException as error:
+            raise ProviderError(str(error)) from error
+
+    return wrapper
+
 
 class CoinGecko:
     URL = "https://api.coingecko.com/api/v3/coins/markets"
@@ -28,11 +52,21 @@ class CoinGecko:
             for coin in data
         ]
 
-
+    @as_provider_error
+    @retry(max_attempts=2, delay=1)
+    def symbol_exists(self, symbol):
+        data = get_json(
+            self.URL,
+            params={"vs_currency": "usd", "symbols": symbol},
+            headers=self.headers(),
+            timeout=5,
+        )
+        return len(data) > 0
 
 
 class CoinMarketCap:
     URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+    MAP_URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/map"
 
     def params(self):
         return {"start": 1,
@@ -58,7 +92,34 @@ class CoinMarketCap:
             for coin in data["data"]
         ]
 
+    @as_provider_error
+    @retry(max_attempts=2, delay=1)
+    def symbol_exists(self, symbol):
+        try:
+            data = get_json(
+                self.MAP_URL,
+                params={"symbol": symbol.upper()},
+                headers=self.headers(),
+                timeout=5,
+            )
+        except requests.HTTPError as error:
+            if error.response.status_code == 400:
+                return False
+            raise
+        return len(data["data"]) > 0
+
+
 SOURCES = {
     'coingecko': CoinGecko,
     'coinmarketcap': CoinMarketCap,
 }
+
+
+def get_provider(name=None):
+    """Провайдер биржи по имени; без имени — активный из settings.EXCHANGE_PROVIDER."""
+    name = name or settings.EXCHANGE_PROVIDER
+    if name not in SOURCES:
+        raise ImproperlyConfigured(
+            f"Неизвестный провайдер {name!r}. Доступны: {', '.join(SOURCES)}"
+        )
+    return SOURCES[name]()

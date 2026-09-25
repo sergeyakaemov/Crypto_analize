@@ -1,5 +1,6 @@
 from django.db import models
 from crypto.sources import SOURCES
+from django.conf import settings
 
 
 class Snapshot(models.Model):
@@ -31,5 +32,31 @@ class CoinPrice(models.Model):
         return f"{self.symbol.upper()} — {self.price}"
 
 
+def normalize_symbol(symbol):
+    return symbol.strip().upper()
 
 
+class WatchlistItem(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='watchlist',
+    )
+    symbol = models.CharField(max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'symbol'],
+                name='unique_user_symbol',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.user} — {self.symbol}'
+
+    def save(self, *args, **kwargs):
+        self.symbol = normalize_symbol(self.symbol)
+        return super().save(*args, **kwargs)
