@@ -61,13 +61,25 @@ def remove_from_watchlist(user, item_id):
         raise WatchlistItemNotFound(item_id)
 
 
+def _latest_snapshot():
+    """Последний снимок как подзапрос — отдельным обращением к базе не выполняется."""
+    return Snapshot.objects.order_by('-created_at').values('pk')[:1]
+
+
 def market_stats():
     """Мин/макс/средняя цена и суммарная капитализация по последнему снимку."""
-    latest = Snapshot.objects.order_by('-created_at').values('pk')[:1]
-
-    return CoinPrice.objects.filter(snapshot__in=latest).aggregate(
+    return CoinPrice.objects.filter(snapshot__in=_latest_snapshot()).aggregate(
         min_price=Min('price'),
         max_price=Max('price'),
         avg_price=Avg('price'),
         total_market_cap=Sum('market_cap'),
+    )
+
+
+def top_movers(limit=10):
+    """Топ по росту цены за 24 часа; монеты без данных об изменении не участвуют."""
+    return (
+        CoinPrice.objects
+        .filter(snapshot__in=_latest_snapshot(), price_change_24h__isnull=False)
+        .order_by('-price_change_24h')[:limit]
     )

@@ -7,6 +7,7 @@ from . import services
 from .models import CoinPrice, Snapshot
 from .serializers import (
     CoinHistorySerializer,
+    CoinPriceSerializer,
     SnapshotDetailSerializer,
     SnapshotSerializer,
     WatchlistItemSerializer,
@@ -89,3 +90,10 @@ class MarketStatsView(APIView):
 
     def get(self, request):
         return Response(services.market_stats())
+
+
+class TopMoversView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        return Response(CoinPriceSerializer(services.top_movers(), many=True).data)
