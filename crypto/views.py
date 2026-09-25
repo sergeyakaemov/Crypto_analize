@@ -14,7 +14,7 @@ from .serializers import (
 
 
 class SnapshotViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Snapshot.objects.annotate(prices_count=Count('prices')).order_by('-created_at')
+    queryset = Snapshot.objects.annotate(prices_count=Count('prices')).order_by('-created_at', '-id')
     permission_classes = [permissions.AllowAny]
 
     def get_serializer_class(self):
