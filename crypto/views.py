@@ -16,7 +16,7 @@ class CoinPriceViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CoinHistorySerializer
 
     def get_queryset(self):
-        queryset = CoinPrice.objects.all().order_by('-snapshot__created_at')
+        queryset = CoinPrice.objects.select_related('snapshot').order_by('-snapshot__created_at')
         symbol = self.request.query_params.get('symbol')
         if symbol:
             queryset = queryset.filter(symbol__iexact=symbol)
