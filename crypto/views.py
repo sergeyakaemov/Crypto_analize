@@ -1,10 +1,12 @@
+from django.db.models import Count
 from rest_framework import viewsets
+
 from .models import Snapshot, CoinPrice
 from .serializers import SnapshotSerializer, SnapshotDetailSerializer, CoinHistorySerializer
 
 
 class SnapshotViewSet(viewsets.ModelViewSet):
-    queryset = Snapshot.objects.all()
+    queryset = Snapshot.objects.annotate(prices_count=Count('prices')).order_by('-created_at')
 
     def get_serializer_class(self):
         if self.action == 'retrieve':

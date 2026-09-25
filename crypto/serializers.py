@@ -16,10 +16,7 @@ class CoinPriceSerializer(serializers.ModelSerializer):
 
 
 class SnapshotSerializer(serializers.ModelSerializer):
-    prices_count = serializers.SerializerMethodField()
-
-    def get_prices_count(self, obj):
-        return obj.prices.count()
+    prices_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Snapshot
