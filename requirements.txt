@@ -12,3 +12,6 @@ Django==6.1
 psycopg2-binary==2.9.12
 
 djangorestframework==3.18.0
+
+# Зависимости разработки
+django-debug-toolbar==8.0.0
