@@ -24,5 +24,8 @@ report.json
 report.csv
 crypto_report.json
 check_db.py
+
 .claude/
+
+# Рабочие заметки
 WATCHLIST_PLAN.md

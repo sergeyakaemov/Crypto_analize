@@ -14,6 +14,11 @@ class SnapShotApiTests(APITestCase):
         self.assertEqual(response.data['count'], 12)
         self.assertEqual(len(response.data['results']), 10)
 
+    def test_create_is_not_allowed(self):
+        response = self.client.post('/api/snapshots/', {'source': 'coingecko'})
+
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 class CoinApiTests(APITestCase):
 
