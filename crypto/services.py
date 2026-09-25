@@ -1,8 +1,9 @@
 import logging
 
 from django.db import IntegrityError, transaction
+from django.db.models import Avg, Max, Min, Sum
 
-from crypto.models import WatchlistItem, normalize_symbol
+from crypto.models import CoinPrice, Snapshot, WatchlistItem, normalize_symbol
 from crypto.sources import ProviderError, get_provider
 
 logger = logging.getLogger(__name__)
@@ -58,3 +59,15 @@ def remove_from_watchlist(user, item_id):
     deleted, _ = WatchlistItem.objects.filter(user=user, pk=item_id).delete()
     if not deleted:
         raise WatchlistItemNotFound(item_id)
+
+
+def market_stats():
+    """Мин/макс/средняя цена и суммарная капитализация по последнему снимку."""
+    latest = Snapshot.objects.order_by('-created_at').values('pk')[:1]
+
+    return CoinPrice.objects.filter(snapshot__in=latest).aggregate(
+        min_price=Min('price'),
+        max_price=Max('price'),
+        avg_price=Avg('price'),
+        total_market_cap=Sum('market_cap'),
+    )
