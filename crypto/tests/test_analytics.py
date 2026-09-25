@@ -78,3 +78,71 @@ def test_market_stats_uses_single_query(django_assert_num_queries):
         response = APIClient().get(reverse("market-stats"))
 
     assert response.status_code == 200
+
+
+def make_snapshot_with_changes(changes):
+    """changes — изменения за 24ч по монетам; None означает «данных нет»."""
+    snapshot = Snapshot.objects.create(source="coingecko")
+    CoinPrice.objects.bulk_create(
+        CoinPrice(
+            snapshot=snapshot,
+            name=f"Coin {number}",
+            symbol=f"C{number}",
+            price=1,
+            price_change_24h=change,
+            market_cap=1,
+            total_volume=1,
+        )
+        for number, change in enumerate(changes)
+    )
+    return snapshot
+
+
+def test_top_movers_sorted_by_change_descending():
+    make_snapshot_with_changes([1, 50, 10])
+
+    response = APIClient().get(reverse("top-movers"))
+
+    assert [coin["price_change_24h"] for coin in response.data] == [50, 10, 1]
+
+
+def test_top_movers_excludes_coins_without_change():
+    """NULL в Postgres больше любого числа — без фильтра такие монеты возглавили бы топ."""
+    make_snapshot_with_changes([5, None, 10, None])
+
+    response = APIClient().get(reverse("top-movers"))
+
+    assert [coin["price_change_24h"] for coin in response.data] == [10, 5]
+
+
+def test_top_movers_returns_at_most_ten():
+    make_snapshot_with_changes(list(range(15)))
+
+    response = APIClient().get(reverse("top-movers"))
+
+    assert len(response.data) == 10
+
+
+def test_top_movers_uses_only_latest_snapshot():
+    make_snapshot_with_changes([99])
+    make_snapshot_with_changes([1, 2])
+
+    response = APIClient().get(reverse("top-movers"))
+
+    assert [coin["price_change_24h"] for coin in response.data] == [2, 1]
+
+
+def test_top_movers_on_empty_database_returns_empty_list():
+    response = APIClient().get(reverse("top-movers"))
+
+    assert response.status_code == 200
+    assert response.data == []
+
+
+def test_top_movers_uses_single_query(django_assert_num_queries):
+    make_snapshot_with_changes([1, 2, 3])
+
+    with django_assert_num_queries(1):
+        response = APIClient().get(reverse("top-movers"))
+
+    assert response.status_code == 200
