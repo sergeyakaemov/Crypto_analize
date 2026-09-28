@@ -64,3 +64,12 @@ def test_snapshot_list_keeps_newest_first():
     response = APIClient().get(reverse("snapshot-list"))
 
     assert [row["id"] for row in response.data["results"]] == [newer.pk, older.pk]
+
+
+def test_snapshot_model_ordering_is_deterministic():
+    """При совпавшем created_at порядок задаёт вторичный ключ по id."""
+    older = Snapshot.objects.create(source="coingecko")
+    newer = Snapshot.objects.create(source="coingecko")
+    Snapshot.objects.filter(pk__in=[older.pk, newer.pk]).update(created_at=older.created_at)
+
+    assert list(Snapshot.objects.all()) == [newer, older]
