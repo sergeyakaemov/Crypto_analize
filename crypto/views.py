@@ -97,3 +97,10 @@ class TopMoversView(APIView):
 
     def get(self, request):
         return Response(CoinPriceSerializer(services.top_movers(), many=True).data)
+
+
+class VolumeLeadersView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        return Response(CoinPriceSerializer(services.volume_leaders(), many=True).data)

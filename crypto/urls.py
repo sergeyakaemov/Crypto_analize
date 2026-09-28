@@ -1,4 +1,4 @@
-from .views import SnapshotViewSet, CoinPriceViewSet, WatchlistViewSet, MarketStatsView, TopMoversView
+from .views import SnapshotViewSet, CoinPriceViewSet, WatchlistViewSet, MarketStatsView, TopMoversView, VolumeLeadersView
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
@@ -12,4 +12,5 @@ urlpatterns = [
     path('analytics/market-stats/', MarketStatsView.as_view(), name='market-stats'),
     path('analytics/top-movers/', TopMoversView.as_view(), name='top-movers'),
     path('', include(router.urls)),
+    path('analytics/volume-leaders/', VolumeLeadersView.as_view(), name='volume-leaders'),
 ]

@@ -83,3 +83,12 @@ def top_movers(limit=10):
         .filter(snapshot__in=_latest_snapshot(), price_change_24h__isnull=False)
         .order_by('-price_change_24h')[:limit]
     )
+
+
+def volume_leaders(limit=10):
+    """Топ по объёму торгов за сутки в последнем снимке."""
+    return (
+        CoinPrice.objects
+        .filter(snapshot__in=_latest_snapshot())
+        .order_by('-total_volume')[:limit]
+    )
