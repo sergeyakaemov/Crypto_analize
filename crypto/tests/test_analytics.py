@@ -146,3 +146,62 @@ def test_top_movers_uses_single_query(django_assert_num_queries):
         response = APIClient().get(reverse("top-movers"))
 
     assert response.status_code == 200
+
+
+def make_snapshot_with_volumes(volumes):
+    """volumes — объёмы торгов по монетам."""
+    snapshot = Snapshot.objects.create(source="coingecko")
+    CoinPrice.objects.bulk_create(
+        CoinPrice(
+            snapshot=snapshot,
+            name=f"Coin {number}",
+            symbol=f"C{number}",
+            price=1,
+            price_change_24h=0,
+            market_cap=1,
+            total_volume=volume,
+        )
+        for number, volume in enumerate(volumes)
+    )
+    return snapshot
+
+
+def test_volume_leaders_sorted_by_volume_descending():
+    make_snapshot_with_volumes([10, 300, 50])
+
+    response = APIClient().get(reverse("volume-leaders"))
+
+    assert [coin["total_volume"] for coin in response.data] == ["300.00", "50.00", "10.00"]
+
+
+def test_volume_leaders_returns_at_most_ten():
+    make_snapshot_with_volumes(list(range(1, 16)))
+
+    response = APIClient().get(reverse("volume-leaders"))
+
+    assert len(response.data) == 10
+
+
+def test_volume_leaders_uses_only_latest_snapshot():
+    make_snapshot_with_volumes([999])
+    make_snapshot_with_volumes([10, 20])
+
+    response = APIClient().get(reverse("volume-leaders"))
+
+    assert [coin["total_volume"] for coin in response.data] == ["20.00", "10.00"]
+
+
+def test_volume_leaders_on_empty_database_returns_empty_list():
+    response = APIClient().get(reverse("volume-leaders"))
+
+    assert response.status_code == 200
+    assert response.data == []
+
+
+def test_volume_leaders_uses_single_query(django_assert_num_queries):
+    make_snapshot_with_volumes([1, 2, 3])
+
+    with django_assert_num_queries(1):
+        response = APIClient().get(reverse("volume-leaders"))
+
+    assert response.status_code == 200
