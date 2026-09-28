@@ -44,3 +44,22 @@ class WatchlistItemSerializer(serializers.ModelSerializer):
         model = WatchlistItem
         fields = ['id', 'symbol', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+
+class CoinFilterSerializer(serializers.Serializer):
+    symbol = serializers.CharField(required=False)
+    min_price = serializers.DecimalField(
+        max_digits=24, decimal_places=12, required=False
+    )
+    max_price = serializers.DecimalField(
+        max_digits=24, decimal_places=12, required=False
+    )
+
+    def validate(self, attrs):
+        minimum = attrs.get('min_price')
+        maximum = attrs.get('max_price')
+        if minimum is not None and maximum is not None and minimum > maximum:
+            raise serializers.ValidationError(
+                'min_price не может быть больше max_price.'
+            )
+        return attrs

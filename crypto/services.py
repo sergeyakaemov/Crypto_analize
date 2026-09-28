@@ -92,3 +92,21 @@ def volume_leaders(limit=10):
         .filter(snapshot__in=_latest_snapshot())
         .order_by('-total_volume')[:limit]
     )
+
+
+def filter_coins(symbol=None, min_price=None, max_price=None):
+    """Монеты с необязательными фильтрами; None означает «фильтр не задан»."""
+    queryset = (
+        CoinPrice.objects
+        .select_related('snapshot')
+        .order_by('-snapshot__created_at', '-id')
+    )
+
+    if symbol:
+        queryset = queryset.filter(symbol__iexact=symbol)
+    if min_price is not None:
+        queryset = queryset.filter(price__gte=min_price)
+    if max_price is not None:
+        queryset = queryset.filter(price__lte=max_price)
+
+    return queryset
