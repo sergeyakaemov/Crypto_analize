@@ -140,6 +140,16 @@ def test_top_movers_on_empty_database_returns_empty_list():
     assert response.data == []
 
 
+def test_top_movers_with_empty_latest_snapshot_returns_empty_list():
+    make_snapshot_with_changes([1, 2])
+    Snapshot.objects.create(source="coingecko")
+
+    response = APIClient().get(reverse("top-movers"))
+
+    assert response.status_code == 200
+    assert response.data == []
+
+
 def test_top_movers_uses_single_query(django_assert_num_queries):
     make_snapshot_with_changes([1, 2, 3])
 
@@ -203,6 +213,16 @@ def test_volume_leaders_breaks_created_at_tie_by_id():
 
 
 def test_volume_leaders_on_empty_database_returns_empty_list():
+    response = APIClient().get(reverse("volume-leaders"))
+
+    assert response.status_code == 200
+    assert response.data == []
+
+
+def test_volume_leaders_with_empty_latest_snapshot_returns_empty_list():
+    make_snapshot_with_volumes([10, 20])
+    Snapshot.objects.create(source="coingecko")
+
     response = APIClient().get(reverse("volume-leaders"))
 
     assert response.status_code == 200
