@@ -3,30 +3,17 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from crypto.models import CoinPrice, Snapshot
+from crypto.models import Snapshot
 
 pytestmark = pytest.mark.django_db
 
 
-def make_snapshot(prices):
-    """Капитализацию делаем равной цене — тогда ожидаемые суммы считаются в уме."""
-    snapshot = Snapshot.objects.create(source="coingecko")
-    CoinPrice.objects.bulk_create(
-        CoinPrice(
-            snapshot=snapshot,
-            name=f"Coin {price}",
-            symbol=f"C{price}",
-            price=price,
-            market_cap=price,
-            total_volume=1,
-        )
-        for price in prices
-    )
-    return snapshot
+# В тестах market-stats капитализацию делаем равной цене —
+# тогда ожидаемые суммы считаются в уме.
 
 
-def test_market_stats_returns_expected_structure():
-    make_snapshot([1, 2, 3])
+def test_market_stats_returns_expected_structure(make_snapshot):
+    make_snapshot(price=[1, 2, 3], market_cap=[1, 2, 3])
 
     response = APIClient().get(reverse("market-stats"))
 
@@ -39,9 +26,9 @@ def test_market_stats_returns_expected_structure():
     }
 
 
-def test_market_stats_counts_only_latest_snapshot():
-    make_snapshot([100, 200])
-    make_snapshot([1, 2, 3])
+def test_market_stats_counts_only_latest_snapshot(make_snapshot):
+    make_snapshot(price=[100, 200], market_cap=[100, 200])
+    make_snapshot(price=[1, 2, 3], market_cap=[1, 2, 3])
 
     response = APIClient().get(reverse("market-stats"))
 
@@ -63,17 +50,17 @@ def test_market_stats_on_empty_database_returns_nulls():
     }
 
 
-def test_market_stats_with_empty_latest_snapshot_returns_nulls():
-    make_snapshot([1, 2, 3])
-    Snapshot.objects.create(source="coingecko")
+def test_market_stats_with_empty_latest_snapshot_returns_nulls(make_snapshot):
+    make_snapshot(price=[1, 2, 3], market_cap=[1, 2, 3])
+    make_snapshot()
 
     response = APIClient().get(reverse("market-stats"))
 
     assert response.data["max_price"] is None
 
 
-def test_market_stats_uses_single_query(django_assert_num_queries):
-    make_snapshot([1, 2, 3])
+def test_market_stats_uses_single_query(make_snapshot, django_assert_num_queries):
+    make_snapshot(price=[1, 2, 3], market_cap=[1, 2, 3])
 
     with django_assert_num_queries(1):
         response = APIClient().get(reverse("market-stats"))
@@ -81,52 +68,34 @@ def test_market_stats_uses_single_query(django_assert_num_queries):
     assert response.status_code == 200
 
 
-def make_snapshot_with_changes(changes):
-    """changes — изменения за 24ч по монетам; None означает «данных нет»."""
-    snapshot = Snapshot.objects.create(source="coingecko")
-    CoinPrice.objects.bulk_create(
-        CoinPrice(
-            snapshot=snapshot,
-            name=f"Coin {number}",
-            symbol=f"C{number}",
-            price=1,
-            price_change_24h=change,
-            market_cap=1,
-            total_volume=1,
-        )
-        for number, change in enumerate(changes)
-    )
-    return snapshot
-
-
-def test_top_movers_sorted_by_change_descending():
-    make_snapshot_with_changes([1, 50, 10])
+def test_top_movers_sorted_by_change_descending(make_snapshot):
+    make_snapshot(price_change_24h=[1, 50, 10])
 
     response = APIClient().get(reverse("top-movers"))
 
     assert [coin["price_change_24h"] for coin in response.data] == [50, 10, 1]
 
 
-def test_top_movers_excludes_coins_without_change():
+def test_top_movers_excludes_coins_without_change(make_snapshot):
     """NULL в Postgres больше любого числа — без фильтра такие монеты возглавили бы топ."""
-    make_snapshot_with_changes([5, None, 10, None])
+    make_snapshot(price_change_24h=[5, None, 10, None])
 
     response = APIClient().get(reverse("top-movers"))
 
     assert [coin["price_change_24h"] for coin in response.data] == [10, 5]
 
 
-def test_top_movers_returns_at_most_ten():
-    make_snapshot_with_changes(list(range(15)))
+def test_top_movers_returns_at_most_ten(make_snapshot):
+    make_snapshot(price_change_24h=list(range(15)))
 
     response = APIClient().get(reverse("top-movers"))
 
     assert len(response.data) == 10
 
 
-def test_top_movers_uses_only_latest_snapshot():
-    make_snapshot_with_changes([99])
-    make_snapshot_with_changes([1, 2])
+def test_top_movers_uses_only_latest_snapshot(make_snapshot):
+    make_snapshot(price_change_24h=[99])
+    make_snapshot(price_change_24h=[1, 2])
 
     response = APIClient().get(reverse("top-movers"))
 
@@ -140,9 +109,9 @@ def test_top_movers_on_empty_database_returns_empty_list():
     assert response.data == []
 
 
-def test_top_movers_with_empty_latest_snapshot_returns_empty_list():
-    make_snapshot_with_changes([1, 2])
-    Snapshot.objects.create(source="coingecko")
+def test_top_movers_with_empty_latest_snapshot_returns_empty_list(make_snapshot):
+    make_snapshot(price_change_24h=[1, 2])
+    make_snapshot()
 
     response = APIClient().get(reverse("top-movers"))
 
@@ -150,8 +119,8 @@ def test_top_movers_with_empty_latest_snapshot_returns_empty_list():
     assert response.data == []
 
 
-def test_top_movers_uses_single_query(django_assert_num_queries):
-    make_snapshot_with_changes([1, 2, 3])
+def test_top_movers_uses_single_query(make_snapshot, django_assert_num_queries):
+    make_snapshot(price_change_24h=[1, 2, 3])
 
     with django_assert_num_queries(1):
         response = APIClient().get(reverse("top-movers"))
@@ -159,52 +128,34 @@ def test_top_movers_uses_single_query(django_assert_num_queries):
     assert response.status_code == 200
 
 
-def make_snapshot_with_volumes(volumes):
-    """volumes — объёмы торгов по монетам."""
-    snapshot = Snapshot.objects.create(source="coingecko")
-    CoinPrice.objects.bulk_create(
-        CoinPrice(
-            snapshot=snapshot,
-            name=f"Coin {number}",
-            symbol=f"C{number}",
-            price=1,
-            price_change_24h=0,
-            market_cap=1,
-            total_volume=volume,
-        )
-        for number, volume in enumerate(volumes)
-    )
-    return snapshot
-
-
-def test_volume_leaders_sorted_by_volume_descending():
-    make_snapshot_with_volumes([10, 300, 50])
+def test_volume_leaders_sorted_by_volume_descending(make_snapshot):
+    make_snapshot(total_volume=[10, 300, 50])
 
     response = APIClient().get(reverse("volume-leaders"))
 
     assert [coin["total_volume"] for coin in response.data] == ["300.00", "50.00", "10.00"]
 
 
-def test_volume_leaders_returns_at_most_ten():
-    make_snapshot_with_volumes(list(range(1, 16)))
+def test_volume_leaders_returns_at_most_ten(make_snapshot):
+    make_snapshot(total_volume=list(range(1, 16)))
 
     response = APIClient().get(reverse("volume-leaders"))
 
     assert len(response.data) == 10
 
 
-def test_volume_leaders_uses_only_latest_snapshot():
-    make_snapshot_with_volumes([999])
-    make_snapshot_with_volumes([10, 20])
+def test_volume_leaders_uses_only_latest_snapshot(make_snapshot):
+    make_snapshot(total_volume=[999])
+    make_snapshot(total_volume=[10, 20])
 
     response = APIClient().get(reverse("volume-leaders"))
 
     assert [coin["total_volume"] for coin in response.data] == ["20.00", "10.00"]
 
 
-def test_volume_leaders_breaks_created_at_tie_by_id():
-    make_snapshot_with_volumes([999])
-    make_snapshot_with_volumes([10])
+def test_volume_leaders_breaks_created_at_tie_by_id(make_snapshot):
+    make_snapshot(total_volume=[999])
+    make_snapshot(total_volume=[10])
     Snapshot.objects.update(created_at=timezone.now())
 
     response = APIClient().get(reverse("volume-leaders"))
@@ -219,9 +170,9 @@ def test_volume_leaders_on_empty_database_returns_empty_list():
     assert response.data == []
 
 
-def test_volume_leaders_with_empty_latest_snapshot_returns_empty_list():
-    make_snapshot_with_volumes([10, 20])
-    Snapshot.objects.create(source="coingecko")
+def test_volume_leaders_with_empty_latest_snapshot_returns_empty_list(make_snapshot):
+    make_snapshot(total_volume=[10, 20])
+    make_snapshot()
 
     response = APIClient().get(reverse("volume-leaders"))
 
@@ -229,8 +180,8 @@ def test_volume_leaders_with_empty_latest_snapshot_returns_empty_list():
     assert response.data == []
 
 
-def test_volume_leaders_uses_single_query(django_assert_num_queries):
-    make_snapshot_with_volumes([1, 2, 3])
+def test_volume_leaders_uses_single_query(make_snapshot, django_assert_num_queries):
+    make_snapshot(total_volume=[1, 2, 3])
 
     with django_assert_num_queries(1):
         response = APIClient().get(reverse("volume-leaders"))
