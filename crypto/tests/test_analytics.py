@@ -1,5 +1,6 @@
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from crypto.models import CoinPrice, Snapshot
@@ -189,6 +190,16 @@ def test_volume_leaders_uses_only_latest_snapshot():
     response = APIClient().get(reverse("volume-leaders"))
 
     assert [coin["total_volume"] for coin in response.data] == ["20.00", "10.00"]
+
+
+def test_volume_leaders_breaks_created_at_tie_by_id():
+    make_snapshot_with_volumes([999])
+    make_snapshot_with_volumes([10])
+    Snapshot.objects.update(created_at=timezone.now())
+
+    response = APIClient().get(reverse("volume-leaders"))
+
+    assert [coin["total_volume"] for coin in response.data] == ["10.00"]
 
 
 def test_volume_leaders_on_empty_database_returns_empty_list():

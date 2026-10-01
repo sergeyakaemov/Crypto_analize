@@ -63,7 +63,7 @@ def remove_from_watchlist(user, item_id):
 
 def _latest_snapshot():
     """Последний снимок как подзапрос — отдельным обращением к базе не выполняется."""
-    return Snapshot.objects.order_by('-created_at').values('pk')[:1]
+    return Snapshot.objects.order_by('-created_at', '-id').values('pk')[:1]
 
 
 def market_stats():
