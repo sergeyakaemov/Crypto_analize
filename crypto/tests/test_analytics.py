@@ -45,10 +45,10 @@ def test_market_stats_counts_only_latest_snapshot():
 
     response = APIClient().get(reverse("market-stats"))
 
-    assert response.data["min_price"] == 1
-    assert response.data["max_price"] == 3
-    assert response.data["avg_price"] == 2
-    assert response.data["total_market_cap"] == 6
+    assert response.data["min_price"] == "1.000000000000"
+    assert response.data["max_price"] == "3.000000000000"
+    assert response.data["avg_price"] == "2.000000000000"
+    assert response.data["total_market_cap"] == "6.00"
 
 
 def test_market_stats_on_empty_database_returns_nulls():

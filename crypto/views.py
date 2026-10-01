@@ -11,7 +11,8 @@ from .serializers import (
     CoinPriceSerializer,
     SnapshotDetailSerializer,
     SnapshotSerializer,
-    WatchlistItemSerializer, CoinFilterSerializer,
+    WatchlistItemSerializer,
+    MarketStatsSerializer,
 )
 
 
@@ -88,7 +89,7 @@ class MarketStatsView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
-        return Response(services.market_stats())
+        return Response(MarketStatsSerializer(services.market_stats()).data)
 
 
 class TopMoversView(APIView):

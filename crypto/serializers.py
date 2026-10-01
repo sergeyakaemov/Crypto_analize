@@ -63,3 +63,10 @@ class CoinFilterSerializer(serializers.Serializer):
                 'min_price не может быть больше max_price.'
             )
         return attrs
+
+
+class MarketStatsSerializer(serializers.Serializer):
+    min_price = serializers.DecimalField(max_digits=24, decimal_places=12, read_only=True)
+    max_price = serializers.DecimalField(max_digits=24, decimal_places=12, read_only=True)
+    avg_price = serializers.DecimalField(max_digits=24, decimal_places=12, read_only=True)
+    total_market_cap = serializers.DecimalField(max_digits=30, decimal_places=2, read_only=True)
