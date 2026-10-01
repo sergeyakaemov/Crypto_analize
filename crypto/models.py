@@ -8,7 +8,9 @@ class Snapshot(models.Model):
     source = models.CharField(max_length=30, choices=[(k, k) for k in SOURCES])
 
     class Meta:
-        ordering = ('-created_at',)
+        # Вторичный ключ по id: created_at может совпасть у снимков, созданных
+        # в одну миллисекунду, а при равных ключах порядок строк не определён.
+        ordering = ('-created_at', '-id')
 
     def __str__(self):
         return f'Снимок #{self.pk} от {self.created_at:%d.%m.%Y %H:%M}'
@@ -46,7 +48,7 @@ class WatchlistItem(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ('-created_at',)
+        ordering = ('-created_at', '-id')
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'symbol'],
