@@ -1,18 +1,23 @@
+from django.db.models import Count
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from . import services
-from .models import CoinPrice, Snapshot
+from .models import Snapshot
 from .serializers import (
+    CoinFilterSerializer,
     CoinHistorySerializer,
+    CoinPriceSerializer,
     SnapshotDetailSerializer,
     SnapshotSerializer,
     WatchlistItemSerializer,
+    MarketStatsSerializer,
 )
 
 
 class SnapshotViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Snapshot.objects.all()
+    queryset = Snapshot.objects.annotate(prices_count=Count('prices')).order_by('-created_at', '-id')
     permission_classes = [permissions.AllowAny]
 
     def get_serializer_class(self):
@@ -26,11 +31,9 @@ class CoinPriceViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        queryset = CoinPrice.objects.all().order_by('-snapshot__created_at')
-        symbol = self.request.query_params.get('symbol')
-        if symbol:
-            queryset = queryset.filter(symbol__iexact=symbol)
-        return queryset
+        filters = CoinFilterSerializer(data=self.request.query_params)
+        filters.is_valid(raise_exception=True)
+        return services.filter_coins(**filters.validated_data)
 
 
 class WatchlistViewSet(viewsets.GenericViewSet):
@@ -80,3 +83,24 @@ class WatchlistViewSet(viewsets.GenericViewSet):
             )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MarketStatsView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        return Response(MarketStatsSerializer(services.market_stats()).data)
+
+
+class TopMoversView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        return Response(CoinPriceSerializer(services.top_movers(), many=True).data)
+
+
+class VolumeLeadersView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        return Response(CoinPriceSerializer(services.volume_leaders(), many=True).data)

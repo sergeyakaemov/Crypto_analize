@@ -16,10 +16,7 @@ class CoinPriceSerializer(serializers.ModelSerializer):
 
 
 class SnapshotSerializer(serializers.ModelSerializer):
-    prices_count = serializers.SerializerMethodField()
-
-    def get_prices_count(self, obj):
-        return obj.prices.count()
+    prices_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Snapshot
@@ -47,3 +44,29 @@ class WatchlistItemSerializer(serializers.ModelSerializer):
         model = WatchlistItem
         fields = ['id', 'symbol', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+
+class CoinFilterSerializer(serializers.Serializer):
+    symbol = serializers.CharField(required=False)
+    min_price = serializers.DecimalField(
+        max_digits=24, decimal_places=12, required=False
+    )
+    max_price = serializers.DecimalField(
+        max_digits=24, decimal_places=12, required=False
+    )
+
+    def validate(self, attrs):
+        minimum = attrs.get('min_price')
+        maximum = attrs.get('max_price')
+        if minimum is not None and maximum is not None and minimum > maximum:
+            raise serializers.ValidationError(
+                'min_price не может быть больше max_price.'
+            )
+        return attrs
+
+
+class MarketStatsSerializer(serializers.Serializer):
+    min_price = serializers.DecimalField(max_digits=24, decimal_places=12, read_only=True)
+    max_price = serializers.DecimalField(max_digits=24, decimal_places=12, read_only=True)
+    avg_price = serializers.DecimalField(max_digits=24, decimal_places=12, read_only=True)
+    total_market_cap = serializers.DecimalField(max_digits=30, decimal_places=2, read_only=True)

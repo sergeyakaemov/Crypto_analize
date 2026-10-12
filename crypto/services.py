@@ -1,8 +1,9 @@
 import logging
 
 from django.db import IntegrityError, transaction
+from django.db.models import Avg, Max, Min, Sum
 
-from crypto.models import WatchlistItem, normalize_symbol
+from crypto.models import CoinPrice, Snapshot, WatchlistItem, normalize_symbol
 from crypto.sources import ProviderError, get_provider
 
 logger = logging.getLogger(__name__)
@@ -58,3 +59,54 @@ def remove_from_watchlist(user, item_id):
     deleted, _ = WatchlistItem.objects.filter(user=user, pk=item_id).delete()
     if not deleted:
         raise WatchlistItemNotFound(item_id)
+
+
+def _latest_snapshot():
+    """Последний снимок как подзапрос — отдельным обращением к базе не выполняется."""
+    return Snapshot.objects.order_by('-created_at', '-id').values('pk')[:1]
+
+
+def market_stats():
+    """Мин/макс/средняя цена и суммарная капитализация по последнему снимку."""
+    return CoinPrice.objects.filter(snapshot__in=_latest_snapshot()).aggregate(
+        min_price=Min('price'),
+        max_price=Max('price'),
+        avg_price=Avg('price'),
+        total_market_cap=Sum('market_cap'),
+    )
+
+
+def top_movers(limit=10):
+    """Топ по росту цены за 24 часа; монеты без данных об изменении не участвуют."""
+    return (
+        CoinPrice.objects
+        .filter(snapshot__in=_latest_snapshot(), price_change_24h__isnull=False)
+        .order_by('-price_change_24h')[:limit]
+    )
+
+
+def volume_leaders(limit=10):
+    """Топ по объёму торгов за сутки в последнем снимке."""
+    return (
+        CoinPrice.objects
+        .filter(snapshot__in=_latest_snapshot())
+        .order_by('-total_volume')[:limit]
+    )
+
+
+def filter_coins(symbol=None, min_price=None, max_price=None):
+    """Монеты с необязательными фильтрами; None означает «фильтр не задан»."""
+    queryset = (
+        CoinPrice.objects
+        .select_related('snapshot')
+        .order_by('-snapshot__created_at', '-id')
+    )
+
+    if symbol:
+        queryset = queryset.filter(symbol__iexact=symbol)
+    if min_price is not None:
+        queryset = queryset.filter(price__gte=min_price)
+    if max_price is not None:
+        queryset = queryset.filter(price__lte=max_price)
+
+    return queryset
