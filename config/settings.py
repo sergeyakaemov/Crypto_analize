@@ -153,3 +153,28 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
+
+
+# --- Celery ---
+# Брокер — очередь задач. Redis база №0.
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+
+# Result backend — отдельное хранилище РЕЗУЛЬТАТОВ (не очередь задач).
+# Используем другую логическую базу Redis (№1), чтобы не путать с брокером,
+# хотя физически это тот же Redis-сервер. Именно отсюда API будет читать
+# статус и результат задачи по task_id (AsyncResult).
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/1')
+
+# Явно фиксируем формат сериализации задач и результатов — JSON вместо
+# дефолтного pickle. Pickle умеет сериализовать произвольные питон-объекты,
+# но исполнять такие сообщения из очереди небезопасно (это как раз ответ на
+# то, почему в .delay() лучше передавать id, а не объект модели: id — это
+# просто число, с ним без проблем работает JSON-сериализация и не тянется
+# устаревшее состояние объекта из момента отправки задачи).
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+# Часовой пояс для Celery Beat — чтобы расписание (например, crontab)
+# совпадало с часовым поясом Django-проекта.
+CELERY_TIMEZONE = TIME_ZONE
