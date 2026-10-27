@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from datetime import timedelta
+from celery.schedules import crontab
 
 
 load_dotenv()
@@ -178,3 +179,14 @@ CELERY_RESULT_SERIALIZER = 'json'
 # Часовой пояс для Celery Beat — чтобы расписание (например, crontab)
 # совпадало с часовым поясом Django-проекта.
 CELERY_TIMEZONE = TIME_ZONE
+
+# Периодические задачи для Celery Beat. Формат: произвольное имя записи ->
+# какую задачу запускать и по какому расписанию. crontab(minute='*/5')
+# значит "в минуты, кратные 5" (:00, :05, :10, ...) — т.е. раз в 5 минут.
+# Для прод-режима (раз в час) достаточно заменить на crontab(minute=0).
+CELERY_BEAT_SCHEDULE = {
+    'fetch-snapshot-every-5-minutes': {
+        'task': 'crypto.tasks.fetch_snapshot_task',
+        'schedule': crontab(minute='*/5'),
+    },
+}
