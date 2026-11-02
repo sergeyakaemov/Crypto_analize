@@ -8,10 +8,13 @@ from crypto import services
 logger = logging.getLogger(__name__)
 
 # Сетевые ошибки — то, что имеет смысл повторить: соединение не установилось,
-# сервер не ответил вовремя, либо сервер сам сообщил о временной проблеме
-# (5xx). Будем различать HTTPError по коду статуса отдельно внутри задачи,
-# поэтому в autoretry_for его не перечисляем целиком.
-NETWORK_ERRORS = (requests.ConnectionError, requests.Timeout)
+# сервер не ответил вовремя или связь оборвалась посреди ответа. HTTPError сюда
+# не входит: его нужно различать по коду статуса внутри задачи.
+NETWORK_ERRORS = (
+    requests.ConnectionError,
+    requests.Timeout,
+    requests.exceptions.ChunkedEncodingError,
+)
 
 
 class ExchangeServerError(Exception):

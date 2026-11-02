@@ -20,12 +20,20 @@ def test_fetch_snapshot_task_success(mocker, exchange_response):
     assert Snapshot.objects.filter(pk=payload["snapshot_id"]).exists()
 
 
-def test_fetch_snapshot_task_retries_on_connection_error(mocker, exchange_response):
-    """Сетевой сбой (обрыв соединения) один раз — задача должна повторить
-    попытку сама и в итоге выполниться успешно."""
+@pytest.mark.parametrize(
+    "error_class",
+    [
+        requests.ConnectionError,
+        requests.Timeout,
+        requests.exceptions.ChunkedEncodingError,
+    ],
+)
+def test_fetch_snapshot_task_retries_on_network_error(mocker, exchange_response, error_class):
+    """Сетевой сбой один раз — задача должна повторить попытку сама и в итоге
+    выполниться успешно."""
     get_json = mocker.patch(
         "crypto.services.get_json",
-        side_effect=[requests.ConnectionError("не удалось подключиться"), exchange_response],
+        side_effect=[error_class("сетевой сбой"), exchange_response],
     )
 
     # .apply() выполняет задачу синхронно, в т.ч. честно проигрывая retry —
@@ -35,6 +43,19 @@ def test_fetch_snapshot_task_retries_on_connection_error(mocker, exchange_respon
 
     assert result.successful()
     assert get_json.call_count == 2, "ожидали первую неудачную попытку и один ретрай"
+
+
+def test_fetch_snapshot_task_gives_up_after_max_retries(mocker):
+    """Сеть не восстановилась — задача не повторяет запрос бесконечно."""
+    get_json = mocker.patch(
+        "crypto.services.get_json",
+        side_effect=requests.ConnectionError("сетевой сбой"),
+    )
+
+    result = tasks.fetch_snapshot_task.apply(args=[None])
+
+    assert result.failed()
+    assert get_json.call_count == 6, "ожидали первую попытку и 5 ретраев"
 
 
 def test_fetch_snapshot_task_retries_on_server_error_with_backoff(mocker, exchange_response):
