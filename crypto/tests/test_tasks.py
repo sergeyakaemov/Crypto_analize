@@ -37,6 +37,26 @@ def test_fetch_snapshot_task_retries_on_connection_error(mocker, exchange_respon
     assert get_json.call_count == 2, "ожидали первую неудачную попытку и один ретрай"
 
 
+def test_fetch_snapshot_task_retries_on_server_error_with_backoff(mocker, exchange_response):
+    """HTTP 503 — временная проблема биржи: задача повторяет запрос с
+    экспоненциальной задержкой и в итоге выполняется успешно."""
+    response = requests.Response()
+    response.status_code = 503
+    error = requests.HTTPError(response=response)
+    get_json = mocker.patch(
+        "crypto.services.get_json",
+        side_effect=[error, error, exchange_response],
+    )
+    retry = mocker.spy(tasks.fetch_snapshot_task, "retry")
+
+    result = tasks.fetch_snapshot_task.apply(args=[None])
+
+    assert result.successful()
+    assert get_json.call_count == 3, "ожидали две неудачные попытки и успешную третью"
+    countdowns = [call.kwargs["countdown"] for call in retry.call_args_list]
+    assert countdowns[0] <= 1 and countdowns[1] <= 2, "задержка должна расти экспоненциально"
+
+
 def test_fetch_snapshot_task_does_not_retry_on_client_error(mocker):
     """HTTP 400 — ошибка в запросе, повторять его бессмысленно: задача должна
     упасть сразу, с первой же попытки, без единого ретрая."""
