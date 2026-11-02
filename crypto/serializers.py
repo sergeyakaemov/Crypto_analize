@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import CoinPrice, Snapshot, WatchlistItem
+from .sources import SOURCES
 
 
 class CoinPriceSerializer(serializers.ModelSerializer):
@@ -63,6 +64,10 @@ class CoinFilterSerializer(serializers.Serializer):
                 'min_price не может быть больше max_price.'
             )
         return attrs
+
+
+class SnapshotCollectSerializer(serializers.Serializer):
+    source = serializers.ChoiceField(choices=list(SOURCES), required=False)
 
 
 class MarketStatsSerializer(serializers.Serializer):

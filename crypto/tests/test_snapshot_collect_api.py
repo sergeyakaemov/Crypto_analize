@@ -25,6 +25,14 @@ def eager_celery(monkeypatch):
     monkeypatch.setattr(fetch_snapshot_task, 'store_eager_result', True)
 
 
+@pytest.fixture
+def mock_delay(mocker):
+    """Подменяет постановку задачи в очередь: брокер и Redis не нужны."""
+    delay = mocker.patch("crypto.views.fetch_snapshot_task.delay")
+    delay.return_value = mocker.Mock(id="task-id", status="PENDING")
+    return delay
+
+
 def test_collect_returns_202_with_task_id(eager_celery, mocker, exchange_response):
     mocker.patch("crypto.services.get_json", return_value=exchange_response)
 
@@ -34,10 +42,31 @@ def test_collect_returns_202_with_task_id(eager_celery, mocker, exchange_respons
     assert 'task_id' in response.data
 
 
-def test_collect_rejects_unknown_source():
-    response = APIClient().post('/api/snapshots/collect/', {'source': 'нет такой биржи'})
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"source": "нет такой биржи"},
+        {"source": ["coingecko"]},
+        {"source": {}},
+        {"source": None},
+        [1, 2],
+    ],
+)
+def test_collect_rejects_invalid_body(mock_delay, body):
+    """Неверный запрос отбивается сразу: 400 и никакой задачи в очереди."""
+    response = APIClient().post('/api/snapshots/collect/', body, format='json')
 
     assert response.status_code == 400
+    mock_delay.assert_not_called()
+
+
+def test_collect_passes_source_to_task(mock_delay):
+    response = APIClient().post(
+        '/api/snapshots/collect/', {'source': 'coinmarketcap'}, format='json'
+    )
+
+    assert response.status_code == 202
+    mock_delay.assert_called_once_with('coinmarketcap')
 
 
 def test_task_status_reports_success_and_result(eager_celery, mocker, exchange_response):

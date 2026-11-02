@@ -10,12 +10,12 @@ from .serializers import (
     CoinFilterSerializer,
     CoinHistorySerializer,
     CoinPriceSerializer,
+    SnapshotCollectSerializer,
     SnapshotDetailSerializer,
     SnapshotSerializer,
     WatchlistItemSerializer,
     MarketStatsSerializer,
 )
-from .sources import SOURCES
 from .tasks import fetch_snapshot_task
 
 
@@ -115,19 +115,13 @@ class SnapshotCollectView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        source = request.data.get('source')
+        # Проверяем запрос ДО постановки в очередь: неверный вход пользователя
+        # разумно отбивать сразу синхронным 400, не тратя время воркера и не
+        # пряча ошибку внутрь асинхронной задачи.
+        serializer = SnapshotCollectSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        # Проверяем источник ДО постановки в очередь: это валидационная
-        # ошибка (неверный вход пользователя), а не сбой сети — такие вещи
-        # разумно отбивать сразу на уровне API синхронным 400, не тратя
-        # время воркера и не пряча ошибку внутрь асинхронной задачи.
-        if source and source not in SOURCES:
-            return Response(
-                {'detail': f"Неизвестный источник {source!r}. Доступны: {', '.join(SOURCES)}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        result = fetch_snapshot_task.delay(source)
+        result = fetch_snapshot_task.delay(serializer.validated_data.get('source'))
 
         # 202 Accepted: запрос принят к обработке, но ресурс (снимок) ещё
         # не создан — задача могла даже не начать выполняться к моменту
