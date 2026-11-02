@@ -7,21 +7,9 @@ from crypto.models import Snapshot
 pytestmark = pytest.mark.django_db
 
 
-SAMPLE_DATA = [
-    {
-        "name": "Bitcoin",
-        "symbol": "btc",
-        "current_price": 50000,
-        "price_change_percentage_24h": 1.5,
-        "market_cap": 900000000,
-        "total_volume": 30000000,
-    },
-]
-
-
-def test_fetch_snapshot_task_success(mocker):
+def test_fetch_snapshot_task_success(mocker, exchange_response):
     """Успешное выполнение: задача сохраняет снимок и возвращает его данные."""
-    mocker.patch("crypto.services.get_json", return_value=SAMPLE_DATA)
+    mocker.patch("crypto.services.get_json", return_value=exchange_response)
 
     result = tasks.fetch_snapshot_task.apply(args=[None])
 
@@ -32,12 +20,12 @@ def test_fetch_snapshot_task_success(mocker):
     assert Snapshot.objects.filter(pk=payload["snapshot_id"]).exists()
 
 
-def test_fetch_snapshot_task_retries_on_connection_error(mocker):
+def test_fetch_snapshot_task_retries_on_connection_error(mocker, exchange_response):
     """Сетевой сбой (обрыв соединения) один раз — задача должна повторить
     попытку сама и в итоге выполниться успешно."""
     get_json = mocker.patch(
         "crypto.services.get_json",
-        side_effect=[requests.ConnectionError("не удалось подключиться"), SAMPLE_DATA],
+        side_effect=[requests.ConnectionError("не удалось подключиться"), exchange_response],
     )
 
     # .apply() выполняет задачу синхронно, в т.ч. честно проигрывая retry —

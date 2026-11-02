@@ -37,6 +37,20 @@ def provider(mocker):
     mocker.patch("crypto.services.get_provider", return_value=provider)
     return provider
 
+@pytest.fixture
+def exchange_response():
+    """Ответ биржи в формате CoinGecko с одной монетой."""
+    return [
+        {
+            "name": "Bitcoin",
+            "symbol": "btc",
+            "current_price": 50000,
+            "price_change_percentage_24h": 1.5,
+            "market_cap": 900000000,
+            "total_volume": 30000000,
+        },
+    ]
+
 
 COIN_DEFAULTS = {
     "price": 1,

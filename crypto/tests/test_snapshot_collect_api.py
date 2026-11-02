@@ -4,18 +4,6 @@ from rest_framework.test import APIClient
 pytestmark = pytest.mark.django_db
 
 
-SAMPLE_DATA = [
-    {
-        "name": "Bitcoin",
-        "symbol": "btc",
-        "current_price": 50000,
-        "price_change_percentage_24h": 1.5,
-        "market_cap": 900000000,
-        "total_volume": 30000000,
-    },
-]
-
-
 @pytest.fixture
 def eager_celery(monkeypatch):
     """Выполняет задачи синхронно внутри тестового процесса, без реального
@@ -37,8 +25,8 @@ def eager_celery(monkeypatch):
     monkeypatch.setattr(fetch_snapshot_task, 'store_eager_result', True)
 
 
-def test_collect_returns_202_with_task_id(eager_celery, mocker):
-    mocker.patch("crypto.services.get_json", return_value=SAMPLE_DATA)
+def test_collect_returns_202_with_task_id(eager_celery, mocker, exchange_response):
+    mocker.patch("crypto.services.get_json", return_value=exchange_response)
 
     response = APIClient().post('/api/snapshots/collect/')
 
@@ -52,8 +40,8 @@ def test_collect_rejects_unknown_source():
     assert response.status_code == 400
 
 
-def test_task_status_reports_success_and_result(eager_celery, mocker):
-    mocker.patch("crypto.services.get_json", return_value=SAMPLE_DATA)
+def test_task_status_reports_success_and_result(eager_celery, mocker, exchange_response):
+    mocker.patch("crypto.services.get_json", return_value=exchange_response)
 
     collect_response = APIClient().post('/api/snapshots/collect/')
     task_id = collect_response.data['task_id']
