@@ -101,11 +101,3 @@ def test_csv_output_writes_file(mocker):
     output.save(report)
     mock_open.assert_called_once_with("test.csv", "w", newline="", encoding="utf-8")
     mock_console.print.assert_called_once()
-
-
-
-
-
-
-
-

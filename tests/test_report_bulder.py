@@ -16,5 +16,3 @@ def test_report_builder(coins):
 
     assert report["coins_count"] ==  2
     assert report["market_cap"] == 3_000_000
-
-

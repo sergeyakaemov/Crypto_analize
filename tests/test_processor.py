@@ -31,8 +31,3 @@ def test_filter_coins_with_price_change():
     result = processor.filter_coins_with_price_change(coins)
     assert len(result) == 1
     assert result[0].name == "Bitcoin"
-
-
-
-
-

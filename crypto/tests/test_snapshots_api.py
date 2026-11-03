@@ -59,4 +59,3 @@ class CoinApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['prices']), 2)
-
