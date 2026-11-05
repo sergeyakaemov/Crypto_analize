@@ -1,9 +1,9 @@
 import os
+from functools import wraps
 
 import requests
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from functools import wraps
 
 from crypto.client import get_json
 from crypto.retry import retry
@@ -14,7 +14,9 @@ class ProviderError(Exception):
 
 
 def as_provider_error(func):
-    """Переводит ошибки HTTP-клиента в ProviderError, чтобы наружу не торчал requests."""
+    """Переводит ошибки HTTP-клиента в ProviderError,
+    чтобы наружу не торчал requests."""
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
@@ -69,19 +71,17 @@ class CoinMarketCap:
     MAP_URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/map"
 
     def params(self):
-        return {"start": 1,
-                "limit": 50,
-                "convert": "USD"}
+        return {"start": 1, "limit": 50, "convert": "USD"}
 
     def headers(self):
         return {
             "Accept": "application/json",
-            "X-CMC_PRO_API_KEY": os.getenv("COINMARKETCAP_API_KEY")
+            "X-CMC_PRO_API_KEY": os.getenv("COINMARKETCAP_API_KEY"),
         }
 
     def normalize(self, data):
         return [
-                {
+            {
                 "name": coin["name"],
                 "symbol": coin["symbol"],
                 "price": coin["quote"]["USD"]["price"],
@@ -110,8 +110,8 @@ class CoinMarketCap:
 
 
 SOURCES = {
-    'coingecko': CoinGecko,
-    'coinmarketcap': CoinMarketCap,
+    "coingecko": CoinGecko,
+    "coinmarketcap": CoinMarketCap,
 }
 
 

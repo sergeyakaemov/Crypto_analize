@@ -1,21 +1,23 @@
-import os
-import requests
-from datetime import datetime
-import typer
 import contextlib
+import os
+from abc import ABC, abstractmethod
+from datetime import datetime
+
+import requests
+import typer
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
-from dotenv import load_dotenv
-from abc import ABC, abstractmethod
-from src.settings import settings, StorageType
+
+from crypto.retry import retry
+from src.settings import StorageType, settings
+from src.sqlite_analytics import SqliteAnalytics
 from src.storage import (
-    JsonStorage,
     CsvStorage,
+    JsonStorage,
     SqliteStorage,
     connect,
 )
-from src.sqlite_analytics import SqliteAnalytics
-from crypto.retry import retry
 
 
 class BaseAPI(ABC):
@@ -35,7 +37,6 @@ class BaseAPI(ABC):
 
 
 class APIClient:
-
     @retry(max_attempts=3, delay=2)
     def get_data(self, url, headers=None, params=None):
         response = requests.get(url, headers=headers, params=params)
@@ -44,7 +45,6 @@ class APIClient:
 
 
 class CoinGeckoAPI(BaseAPI):
-
     URL = "https://api.coingecko.com/api/v3/coins/markets"
 
     def get_params(self):
@@ -73,7 +73,6 @@ class CoinGeckoAPI(BaseAPI):
 
 
 class CoinMarketCapAPI(BaseAPI):
-
     URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
 
     def get_params(self):
@@ -104,7 +103,6 @@ class CoinMarketCapAPI(BaseAPI):
 
 
 class CryptoProcessor:
-
     def filter_coins_with_price_change(self, data):
         return [c for c in data if c.price_change_percentage_24h is not None]
 
@@ -153,14 +151,12 @@ class Coin:
 
 
 class BaseOutput(ABC):
-
     @abstractmethod
     def save(self, report: dict) -> None:
         pass
 
 
 class ConsoleOutput(BaseOutput):
-
     def __init__(self, console):
         self.console = console
 
@@ -200,20 +196,16 @@ class ConsoleOutput(BaseOutput):
 # можно показать в файле независимо от того, куда их сохранил storage.
 # Сериализацию не дублируем, а переиспользуем из слоя хранилища.
 class FileOutput(BaseOutput):
-
     def __init__(self, console, storage):
         self.console = console
         self.storage = storage
 
     def save(self, report: dict) -> None:
         self.storage.save(report)
-        self.console.print(
-            f"[green]Отчёт сохранён в {self.storage.filename}[/green]"
-        )
+        self.console.print(f"[green]Отчёт сохранён в {self.storage.filename}[/green]")
 
 
 class ReportBuilder:
-
     def build(self, data, top_up, top_down, volume, market_cap):
         return {
             "generated_at": datetime.now().isoformat(),
@@ -227,7 +219,6 @@ class ReportBuilder:
 
 
 class CryptoApp:
-
     def __init__(
         self,
         client,
@@ -305,6 +296,7 @@ class CryptoApp:
 
 app = typer.Typer()
 
+
 def open_snapshots(stack, console):
     """Открывает базу со снимками для команд аналитики.
 
@@ -340,7 +332,6 @@ def list_snapshots():
     console = Console()
 
     with contextlib.ExitStack() as stack:
-
         analytics = open_snapshots(stack, console)
 
         snapshots = analytics.list_snapshots()
@@ -351,7 +342,6 @@ def list_snapshots():
     table.add_column("[bold]Монет[/bold]")
 
     for snapshot_id, created_at, coins_count in snapshots:
-
         table.add_row(
             str(snapshot_id),
             str(created_at),
@@ -359,6 +349,7 @@ def list_snapshots():
         )
 
     console.print(table)
+
 
 APIS = {
     "coingecko": CoinGeckoAPI,
@@ -372,6 +363,7 @@ OUTPUTS = {
     "json": lambda console: FileOutput(console, JsonStorage()),
     "csv": lambda console: FileOutput(console, CsvStorage()),
 }
+
 
 def create_storage(stack):
     """Фабрика хранилища — единственное место, где читается settings.storage.
@@ -423,7 +415,6 @@ def run(
     report_builder = ReportBuilder()
 
     with contextlib.ExitStack() as stack:
-
         storage = create_storage(stack)
 
         crypto_app = stack.enter_context(
@@ -449,13 +440,11 @@ def compare_snapshots(id1: int, id2: int):
 
     if id1 == id2:
         console.print(
-            f"[red]Снимок {id1} сравнивается сам с собой: "
-            f"разница всегда нулевая[/red]"
+            f"[red]Снимок {id1} сравнивается сам с собой: разница всегда нулевая[/red]"
         )
         raise typer.Exit(code=1)
 
     with contextlib.ExitStack() as stack:
-
         analytics = open_snapshots(stack, console)
 
         missing = analytics.missing_snapshots(id1, id2)
@@ -471,9 +460,7 @@ def compare_snapshots(id1: int, id2: int):
         result = analytics.compare_snapshots(id1, id2)
 
     if not result:
-        console.print(
-            f"[yellow]У снимков {id1} и {id2} нет общих монет[/yellow]"
-        )
+        console.print(f"[yellow]У снимков {id1} и {id2} нет общих монет[/yellow]")
         return
 
     # Порядок аргументов задаёт смысл знака: пишем его явно, иначе
@@ -481,13 +468,10 @@ def compare_snapshots(id1: int, id2: int):
     console.print(f"[bold]Снимок {id1} -> снимок {id2}[/bold]")
 
     for symbol, old_price, new_price, difference in result:
-
         color = "green" if difference >= 0 else "red"
 
         console.print(
-            f"{symbol}: "
-            f"{old_price} -> {new_price} "
-            f"[{color}]({difference:+})[/{color}]"
+            f"{symbol}: {old_price} -> {new_price} [{color}]({difference:+})[/{color}]"
         )
 
 

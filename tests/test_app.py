@@ -59,6 +59,5 @@ def test_tops_skip_coins_without_price_change(mocker):
 
     for group in ("top_up", "top_down"):
         assert all(
-            coin["price_change_percentage_24h"] is not None
-            for coin in report[group]
+            coin["price_change_percentage_24h"] is not None for coin in report[group]
         )

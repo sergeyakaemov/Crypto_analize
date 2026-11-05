@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from .models import CoinPrice, Snapshot, WatchlistItem
 from .sources import SOURCES
 
@@ -7,12 +8,12 @@ class CoinPriceSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoinPrice
         fields = [
-            'name',
-            'symbol',
-            'price',
-            'price_change_24h',
-            'market_cap',
-            'total_volume'
+            "name",
+            "symbol",
+            "price",
+            "price_change_24h",
+            "market_cap",
+            "total_volume",
         ]
 
 
@@ -21,30 +22,34 @@ class SnapshotSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Snapshot
-        fields = ['id', 'created_at', 'source', 'prices_count']
+        fields = ["id", "created_at", "source", "prices_count"]
 
 
 class SnapshotDetailSerializer(SnapshotSerializer):
     prices = CoinPriceSerializer(many=True, read_only=True)
 
     class Meta(SnapshotSerializer.Meta):
-        fields = SnapshotSerializer.Meta.fields + ['prices']
+        fields = SnapshotSerializer.Meta.fields + ["prices"]
 
 
 class CoinHistorySerializer(CoinPriceSerializer):
-    snapshot_source = serializers.CharField(source='snapshot.source', read_only=True)
-    snapshot_created_at = serializers.DateTimeField(source='snapshot.created_at', read_only=True)
+    snapshot_source = serializers.CharField(source="snapshot.source", read_only=True)
+    snapshot_created_at = serializers.DateTimeField(
+        source="snapshot.created_at", read_only=True
+    )
 
     class Meta(CoinPriceSerializer.Meta):
-        fields = CoinPriceSerializer.Meta.fields + ['snapshot_source',
-                                                    'snapshot_created_at']
+        fields = CoinPriceSerializer.Meta.fields + [
+            "snapshot_source",
+            "snapshot_created_at",
+        ]
 
 
 class WatchlistItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = WatchlistItem
-        fields = ['id', 'symbol', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = ["id", "symbol", "created_at"]
+        read_only_fields = ["id", "created_at"]
 
 
 class CoinFilterSerializer(serializers.Serializer):
@@ -57,11 +62,11 @@ class CoinFilterSerializer(serializers.Serializer):
     )
 
     def validate(self, attrs):
-        minimum = attrs.get('min_price')
-        maximum = attrs.get('max_price')
+        minimum = attrs.get("min_price")
+        maximum = attrs.get("max_price")
         if minimum is not None and maximum is not None and minimum > maximum:
             raise serializers.ValidationError(
-                'min_price не может быть больше max_price.'
+                "min_price не может быть больше max_price."
             )
         return attrs
 
@@ -71,7 +76,15 @@ class SnapshotCollectSerializer(serializers.Serializer):
 
 
 class MarketStatsSerializer(serializers.Serializer):
-    min_price = serializers.DecimalField(max_digits=24, decimal_places=12, read_only=True)
-    max_price = serializers.DecimalField(max_digits=24, decimal_places=12, read_only=True)
-    avg_price = serializers.DecimalField(max_digits=24, decimal_places=12, read_only=True)
-    total_market_cap = serializers.DecimalField(max_digits=30, decimal_places=2, read_only=True)
+    min_price = serializers.DecimalField(
+        max_digits=24, decimal_places=12, read_only=True
+    )
+    max_price = serializers.DecimalField(
+        max_digits=24, decimal_places=12, read_only=True
+    )
+    avg_price = serializers.DecimalField(
+        max_digits=24, decimal_places=12, read_only=True
+    )
+    total_market_cap = serializers.DecimalField(
+        max_digits=30, decimal_places=2, read_only=True
+    )

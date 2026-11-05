@@ -20,9 +20,9 @@ def eager_celery(monkeypatch):
     from config.celery import app
     from crypto.tasks import fetch_snapshot_task
 
-    monkeypatch.setattr(app.conf, 'task_always_eager', True)
-    monkeypatch.setattr(app.conf, 'task_store_eager_result', True)
-    monkeypatch.setattr(fetch_snapshot_task, 'store_eager_result', True)
+    monkeypatch.setattr(app.conf, "task_always_eager", True)
+    monkeypatch.setattr(app.conf, "task_store_eager_result", True)
+    monkeypatch.setattr(fetch_snapshot_task, "store_eager_result", True)
 
 
 @pytest.fixture
@@ -36,10 +36,10 @@ def mock_delay(mocker):
 def test_collect_returns_202_with_task_id(eager_celery, mocker, exchange_response):
     mocker.patch("crypto.services.get_json", return_value=exchange_response)
 
-    response = APIClient().post('/api/snapshots/collect/')
+    response = APIClient().post("/api/snapshots/collect/")
 
     assert response.status_code == 202
-    assert 'task_id' in response.data
+    assert "task_id" in response.data
 
 
 @pytest.mark.parametrize(
@@ -54,7 +54,7 @@ def test_collect_returns_202_with_task_id(eager_celery, mocker, exchange_respons
 )
 def test_collect_rejects_invalid_body(mock_delay, body):
     """Неверный запрос отбивается сразу: 400 и никакой задачи в очереди."""
-    response = APIClient().post('/api/snapshots/collect/', body, format='json')
+    response = APIClient().post("/api/snapshots/collect/", body, format="json")
 
     assert response.status_code == 400
     mock_delay.assert_not_called()
@@ -62,30 +62,32 @@ def test_collect_rejects_invalid_body(mock_delay, body):
 
 def test_collect_passes_source_to_task(mock_delay):
     response = APIClient().post(
-        '/api/snapshots/collect/', {'source': 'coinmarketcap'}, format='json'
+        "/api/snapshots/collect/", {"source": "coinmarketcap"}, format="json"
     )
 
     assert response.status_code == 202
-    mock_delay.assert_called_once_with('coinmarketcap')
+    mock_delay.assert_called_once_with("coinmarketcap")
 
 
-def test_task_status_reports_success_and_result(eager_celery, mocker, exchange_response):
+def test_task_status_reports_success_and_result(
+    eager_celery, mocker, exchange_response
+):
     mocker.patch("crypto.services.get_json", return_value=exchange_response)
 
-    collect_response = APIClient().post('/api/snapshots/collect/')
-    task_id = collect_response.data['task_id']
+    collect_response = APIClient().post("/api/snapshots/collect/")
+    task_id = collect_response.data["task_id"]
 
-    status_response = APIClient().get(f'/api/tasks/{task_id}/')
+    status_response = APIClient().get(f"/api/tasks/{task_id}/")
 
     assert status_response.status_code == 200
-    assert status_response.data['status'] == 'SUCCESS'
-    assert status_response.data['result']['coins_count'] == 1
+    assert status_response.data["status"] == "SUCCESS"
+    assert status_response.data["result"]["coins_count"] == 1
 
 
 def test_task_status_for_unknown_id_is_pending():
     """Несуществующий task_id — Celery не считает это ошибкой, просто говорит
     PENDING (не умеет отличить "ещё не начался" от "такого никогда не было")."""
-    response = APIClient().get('/api/tasks/00000000-0000-0000-0000-000000000000/')
+    response = APIClient().get("/api/tasks/00000000-0000-0000-0000-000000000000/")
 
     assert response.status_code == 200
-    assert response.data['status'] == 'PENDING'
+    assert response.data["status"] == "PENDING"

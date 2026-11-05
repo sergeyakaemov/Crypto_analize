@@ -1,8 +1,8 @@
 import pytest
+import requests
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-import requests
 
 from crypto import sources
 from crypto.models import WatchlistItem
@@ -69,7 +69,9 @@ def test_token_refresh_returns_new_access(anon_client, user):
         {"username": user.username, "password": PASSWORD},
     ).data
 
-    response = anon_client.post(reverse("token_refresh"), {"refresh": tokens["refresh"]})
+    response = anon_client.post(
+        reverse("token_refresh"), {"refresh": tokens["refresh"]}
+    )
 
     assert response.status_code == status.HTTP_200_OK
     assert "access" in response.data

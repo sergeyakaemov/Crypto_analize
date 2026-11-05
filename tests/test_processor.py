@@ -1,5 +1,6 @@
-from src.crypto import CryptoProcessor, Coin
 import pytest
+
+from src.crypto import Coin, CryptoProcessor
 
 
 def test_total_market_cap(coins):
@@ -14,7 +15,9 @@ def test_total_volume(coins):
     assert result.name == "Bitcoin"
 
 
-@pytest.mark.parametrize("reverse, expected_first",[(True, "Bitcoin"),(False, "Ethereum")])
+@pytest.mark.parametrize(
+    "reverse, expected_first", [(True, "Bitcoin"), (False, "Ethereum")]
+)
 def test_get_top_price_changes(coins, reverse, expected_first):
     processor = CryptoProcessor()
     result = processor.get_top_price_changes(coins, reverse=reverse)
@@ -31,8 +34,3 @@ def test_filter_coins_with_price_change():
     result = processor.filter_coins_with_price_change(coins)
     assert len(result) == 1
     assert result[0].name == "Bitcoin"
-
-
-
-
-

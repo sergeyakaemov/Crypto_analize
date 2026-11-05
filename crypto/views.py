@@ -10,21 +10,23 @@ from .serializers import (
     CoinFilterSerializer,
     CoinHistorySerializer,
     CoinPriceSerializer,
+    MarketStatsSerializer,
     SnapshotCollectSerializer,
     SnapshotDetailSerializer,
     SnapshotSerializer,
     WatchlistItemSerializer,
-    MarketStatsSerializer,
 )
 from .tasks import fetch_snapshot_task
 
 
 class SnapshotViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Snapshot.objects.annotate(prices_count=Count('prices')).order_by('-created_at', '-id')
+    queryset = Snapshot.objects.annotate(prices_count=Count("prices")).order_by(
+        "-created_at", "-id"
+    )
     permission_classes = [permissions.AllowAny]
 
     def get_serializer_class(self):
-        if self.action == 'retrieve':
+        if self.action == "retrieve":
             return SnapshotDetailSerializer
         return SnapshotSerializer
 
@@ -42,7 +44,7 @@ class CoinPriceViewSet(viewsets.ReadOnlyModelViewSet):
 class WatchlistViewSet(viewsets.GenericViewSet):
     serializer_class = WatchlistItemSerializer
     permission_classes = [permissions.IsAuthenticated]
-    lookup_value_regex = r'\d+'
+    lookup_value_regex = r"\d+"
 
     def list(self, request):
         items = services.list_watchlist(request.user)
@@ -56,21 +58,21 @@ class WatchlistViewSet(viewsets.GenericViewSet):
 
         try:
             item = services.add_to_watchlist(
-                request.user, serializer.validated_data['symbol']
+                request.user, serializer.validated_data["symbol"]
             )
         except services.SymbolNotFound:
             return Response(
-                {'detail': 'Символ не найден на бирже.'},
+                {"detail": "Символ не найден на бирже."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except services.AlreadyInWatchlist:
             return Response(
-                {'detail': 'Монета уже в списке.'},
+                {"detail": "Монета уже в списке."},
                 status=status.HTTP_409_CONFLICT,
             )
         except services.ExchangeUnavailable:
             return Response(
-                {'detail': 'Биржа недоступна, попробуйте позже.'},
+                {"detail": "Биржа недоступна, попробуйте позже."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
@@ -81,7 +83,7 @@ class WatchlistViewSet(viewsets.GenericViewSet):
             services.remove_from_watchlist(request.user, pk)
         except services.WatchlistItemNotFound:
             return Response(
-                {'detail': 'Не найдено.'},
+                {"detail": "Не найдено."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -112,6 +114,7 @@ class VolumeLeadersView(APIView):
 class SnapshotCollectView(APIView):
     """Ставит в очередь задачу сбора снимка. Не делает работу сама —
     вся логика живёт в crypto.tasks.fetch_snapshot_task."""
+
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -121,33 +124,34 @@ class SnapshotCollectView(APIView):
         serializer = SnapshotCollectSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        result = fetch_snapshot_task.delay(serializer.validated_data.get('source'))
+        result = fetch_snapshot_task.delay(serializer.validated_data.get("source"))
 
         # 202 Accepted: запрос принят к обработке, но ресурс (снимок) ещё
         # не создан — задача могла даже не начать выполняться к моменту
         # этого ответа. Тело ответа поэтому не Snapshot, а идентификатор
         # задачи, по которому можно спросить результат отдельно.
         return Response(
-            {'task_id': result.id, 'status': result.status},
+            {"task_id": result.id, "status": result.status},
             status=status.HTTP_202_ACCEPTED,
         )
 
 
 class TaskStatusView(APIView):
     """Статус и результат произвольной Celery-задачи по её task_id."""
+
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, task_id):
         result = AsyncResult(task_id)
 
-        payload = {'task_id': task_id, 'status': result.status}
+        payload = {"task_id": task_id, "status": result.status}
 
         if result.ready():
             if result.successful():
-                payload['result'] = result.result
+                payload["result"] = result.result
             else:
                 # В случае ошибки result.result — это сам объект исключения,
                 # а не JSON-сериализуемые данные, поэтому отдаём его как текст.
-                payload['error'] = str(result.result)
+                payload["error"] = str(result.result)
 
         return Response(payload)

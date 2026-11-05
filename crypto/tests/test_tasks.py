@@ -1,7 +1,6 @@
 import pytest
 import requests
 
-
 from crypto import tasks
 from crypto.models import Snapshot
 
@@ -29,7 +28,9 @@ def test_fetch_snapshot_task_success(mocker, exchange_response):
         requests.exceptions.ChunkedEncodingError,
     ],
 )
-def test_fetch_snapshot_task_retries_on_network_error(mocker, exchange_response, error_class):
+def test_fetch_snapshot_task_retries_on_network_error(
+    mocker, exchange_response, error_class
+):
     """Сетевой сбой один раз — задача должна повторить попытку сама и в итоге
     выполниться успешно."""
     get_json = mocker.patch(
@@ -60,7 +61,9 @@ def test_fetch_snapshot_task_gives_up_after_max_retries(mocker):
 
 
 @pytest.mark.parametrize("status_code", [503, 429])
-def test_fetch_snapshot_task_retries_on_temporary_http_error_with_backoff(mocker, exchange_response, status_code):
+def test_fetch_snapshot_task_retries_on_temporary_http_error_with_backoff(
+    mocker, exchange_response, status_code
+):
     """HTTP 503, 429 — временная проблема биржи: задача повторяет запрос с
     экспоненциальной задержкой и в итоге выполняется успешно."""
     response = requests.Response()
@@ -77,7 +80,9 @@ def test_fetch_snapshot_task_retries_on_temporary_http_error_with_backoff(mocker
     assert result.successful()
     assert get_json.call_count == 3, "ожидали две неудачные попытки и успешную третью"
     countdowns = [call.kwargs["countdown"] for call in retry.call_args_list]
-    assert countdowns[0] <= 1 and countdowns[1] <= 2, "задержка должна расти экспоненциально"
+    assert countdowns[0] <= 1 and countdowns[1] <= 2, (
+        "задержка должна расти экспоненциально"
+    )
 
 
 def test_fetch_snapshot_task_does_not_retry_on_client_error(mocker):

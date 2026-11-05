@@ -7,6 +7,7 @@ from crypto.models import CoinPrice, Snapshot
 @pytest.fixture(autouse=True)
 def block_network(monkeypatch):
     """Любой реальный HTTP-запрос в тестах — ошибка."""
+
     def fail(*args, **kwargs):
         raise RuntimeError("Реальный HTTP-запрос в тестах запрещён")
 
@@ -37,6 +38,7 @@ def provider(mocker):
     mocker.patch("crypto.services.get_provider", return_value=provider)
     return provider
 
+
 @pytest.fixture
 def exchange_response():
     """Ответ биржи в формате CoinGecko с одной монетой."""
@@ -64,6 +66,7 @@ COIN_DEFAULTS = {
 def make_snapshot(db):
     """Фабрика снимка. Поля монет передаются списками: price=[1, 2] — две монеты
     с ценами 1 и 2, остальные поля из COIN_DEFAULTS. coins=N — N монет по умолчанию."""
+
     def make(coins=0, **fields):
         count = len(next(iter(fields.values()))) if fields else coins
         snapshot = Snapshot.objects.create(source="coingecko")

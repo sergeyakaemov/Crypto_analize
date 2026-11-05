@@ -37,7 +37,7 @@ class SqliteAnalytics:
             WHERE type = 'table'
             AND name = ?
             """,
-            ("snapshots",)
+            ("snapshots",),
         )
 
         return cursor.fetchone() is not None
@@ -58,16 +58,12 @@ class SqliteAnalytics:
             FROM snapshots
             WHERE id IN ({placeholders})
             """,
-            ids
+            ids,
         )
 
         found = {row[0] for row in cursor.fetchall()}
 
-        return [
-            snapshot_id
-            for snapshot_id in ids
-            if snapshot_id not in found
-        ]
+        return [snapshot_id for snapshot_id in ids if snapshot_id not in found]
 
     def price_history(self, symbol):
 
@@ -85,7 +81,7 @@ class SqliteAnalytics:
             WHERE coin_prices.symbol = ?
             ORDER BY snapshots.created_at
             """,
-            (symbol,)
+            (symbol,),
         )
 
         return cursor.fetchall()
@@ -111,11 +107,10 @@ class SqliteAnalytics:
             (
                 old_id,
                 new_id,
-            )
+            ),
         )
 
         return cursor.fetchall()
-
 
     SORT_ORDER = {
         True: "DESC",
@@ -138,9 +133,7 @@ class SqliteAnalytics:
 
     def top_price_changes(self, limit=5, reverse=True):
 
-        query = self.TOP_PRICE_CHANGES.format(
-            order=self.SORT_ORDER[reverse]
-        )
+        query = self.TOP_PRICE_CHANGES.format(order=self.SORT_ORDER[reverse])
 
         cursor = self.connection.cursor()
 

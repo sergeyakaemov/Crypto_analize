@@ -65,43 +65,37 @@ def remove_from_watchlist(user, item_id):
 
 def _latest_snapshot():
     """Последний снимок как подзапрос — отдельным обращением к базе не выполняется."""
-    return Snapshot.objects.order_by('-created_at', '-id').values('pk')[:1]
+    return Snapshot.objects.order_by("-created_at", "-id").values("pk")[:1]
 
 
 def market_stats():
     """Мин/макс/средняя цена и суммарная капитализация по последнему снимку."""
     return CoinPrice.objects.filter(snapshot__in=_latest_snapshot()).aggregate(
-        min_price=Min('price'),
-        max_price=Max('price'),
-        avg_price=Avg('price'),
-        total_market_cap=Sum('market_cap'),
+        min_price=Min("price"),
+        max_price=Max("price"),
+        avg_price=Avg("price"),
+        total_market_cap=Sum("market_cap"),
     )
 
 
 def top_movers(limit=10):
     """Топ по росту цены за 24 часа; монеты без данных об изменении не участвуют."""
-    return (
-        CoinPrice.objects
-        .filter(snapshot__in=_latest_snapshot(), price_change_24h__isnull=False)
-        .order_by('-price_change_24h')[:limit]
-    )
+    return CoinPrice.objects.filter(
+        snapshot__in=_latest_snapshot(), price_change_24h__isnull=False
+    ).order_by("-price_change_24h")[:limit]
 
 
 def volume_leaders(limit=10):
     """Топ по объёму торгов за сутки в последнем снимке."""
-    return (
-        CoinPrice.objects
-        .filter(snapshot__in=_latest_snapshot())
-        .order_by('-total_volume')[:limit]
-    )
+    return CoinPrice.objects.filter(snapshot__in=_latest_snapshot()).order_by(
+        "-total_volume"
+    )[:limit]
 
 
 def filter_coins(symbol=None, min_price=None, max_price=None):
     """Монеты с необязательными фильтрами; None означает «фильтр не задан»."""
-    queryset = (
-        CoinPrice.objects
-        .select_related('snapshot')
-        .order_by('-snapshot__created_at', '-id')
+    queryset = CoinPrice.objects.select_related("snapshot").order_by(
+        "-snapshot__created_at", "-id"
     )
 
     if symbol:
@@ -135,11 +129,12 @@ def collect_snapshot(source_name=None):
 
     with transaction.atomic():
         snapshot = Snapshot.objects.create(source=name)
-        CoinPrice.objects.bulk_create([
-            CoinPrice(snapshot=snapshot, **row)
-            for row in rows
-        ])
+        CoinPrice.objects.bulk_create(
+            [CoinPrice(snapshot=snapshot, **row) for row in rows]
+        )
 
-    logger.info("Снимок #%s сохранён: %s монет (источник=%s)", snapshot.pk, len(rows), name)
+    logger.info(
+        "Снимок #%s сохранён: %s монет (источник=%s)", snapshot.pk, len(rows), name
+    )
 
-    return {'snapshot_id': snapshot.pk, 'coins_count': len(rows), 'source': name}
+    return {"snapshot_id": snapshot.pk, "coins_count": len(rows), "source": name}
