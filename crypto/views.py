@@ -1,11 +1,13 @@
 from celery.result import AsyncResult
-from django.db.models import Count
+from django.db.models import Count, QuerySet
 from rest_framework import permissions, status, viewsets
+from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.serializers import BaseSerializer
 from rest_framework.views import APIView
 
 from . import services
-from .models import Snapshot
+from .models import CoinPrice, Snapshot
 from .serializers import (
     CoinFilterSerializer,
     CoinHistorySerializer,
@@ -25,7 +27,7 @@ class SnapshotViewSet(viewsets.ReadOnlyModelViewSet):
     )
     permission_classes = [permissions.AllowAny]
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> type[BaseSerializer]:
         if self.action == "retrieve":
             return SnapshotDetailSerializer
         return SnapshotSerializer
@@ -35,7 +37,7 @@ class CoinPriceViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CoinHistorySerializer
     permission_classes = [permissions.AllowAny]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[CoinPrice]:
         filters = CoinFilterSerializer(data=self.request.query_params)
         filters.is_valid(raise_exception=True)
         return services.filter_coins(**filters.validated_data)
@@ -93,21 +95,21 @@ class WatchlistViewSet(viewsets.GenericViewSet):
 class MarketStatsView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         return Response(MarketStatsSerializer(services.market_stats()).data)
 
 
 class TopMoversView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         return Response(CoinPriceSerializer(services.top_movers(), many=True).data)
 
 
 class VolumeLeadersView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         return Response(CoinPriceSerializer(services.volume_leaders(), many=True).data)
 
 
@@ -117,7 +119,7 @@ class SnapshotCollectView(APIView):
 
     permission_classes = [permissions.AllowAny]
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         # Проверяем запрос ДО постановки в очередь: неверный вход пользователя
         # разумно отбивать сразу синхронным 400, не тратя время воркера и не
         # пряча ошибку внутрь асинхронной задачи.
@@ -141,7 +143,7 @@ class TaskStatusView(APIView):
 
     permission_classes = [permissions.AllowAny]
 
-    def get(self, request, task_id):
+    def get(self, request: Request, task_id: str) -> Response:
         result = AsyncResult(task_id)
 
         payload = {"task_id": task_id, "status": result.status}
