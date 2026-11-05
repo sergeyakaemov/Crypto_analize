@@ -1,7 +1,6 @@
 import pytest
 import requests
-from prompt_toolkit.key_binding.bindings.named_commands import backward_word
-from redis import backoff
+
 
 from crypto import tasks
 from crypto.models import Snapshot
