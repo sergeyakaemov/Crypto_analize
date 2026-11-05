@@ -1,8 +1,11 @@
 import logging
+from decimal import Decimal
+from typing import Any
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
-from django.db.models import Avg, Max, Min, Sum
+from django.db.models import Avg, Max, Min, QuerySet, Sum
 
 from crypto.client import get_json
 from crypto.models import CoinPrice, Snapshot, WatchlistItem, normalize_symbol
@@ -31,11 +34,11 @@ class WatchlistItemNotFound(WatchlistError):
     """Элемента нет или он принадлежит другому пользователю."""
 
 
-def list_watchlist(user):
+def list_watchlist(user: User) -> QuerySet[WatchlistItem]:
     return WatchlistItem.objects.filter(user=user)
 
 
-def add_to_watchlist(user, symbol):
+def add_to_watchlist(user: User, symbol: str) -> WatchlistItem:
     symbol = normalize_symbol(symbol)
 
     if WatchlistItem.objects.filter(user=user, symbol=symbol).exists():
@@ -57,18 +60,18 @@ def add_to_watchlist(user, symbol):
         raise AlreadyInWatchlist(symbol)
 
 
-def remove_from_watchlist(user, item_id):
+def remove_from_watchlist(user: User, item_id: int | str) -> None:
     deleted, _ = WatchlistItem.objects.filter(user=user, pk=item_id).delete()
     if not deleted:
         raise WatchlistItemNotFound(item_id)
 
 
-def _latest_snapshot():
+def _latest_snapshot() -> QuerySet[Snapshot, Any]:
     """Последний снимок как подзапрос — отдельным обращением к базе не выполняется."""
     return Snapshot.objects.order_by("-created_at", "-id").values("pk")[:1]
 
 
-def market_stats():
+def market_stats() -> dict[str, Decimal | None]:
     """Мин/макс/средняя цена и суммарная капитализация по последнему снимку."""
     return CoinPrice.objects.filter(snapshot__in=_latest_snapshot()).aggregate(
         min_price=Min("price"),
@@ -78,21 +81,25 @@ def market_stats():
     )
 
 
-def top_movers(limit=10):
+def top_movers(limit: int = 10) -> QuerySet[CoinPrice]:
     """Топ по росту цены за 24 часа; монеты без данных об изменении не участвуют."""
     return CoinPrice.objects.filter(
         snapshot__in=_latest_snapshot(), price_change_24h__isnull=False
     ).order_by("-price_change_24h")[:limit]
 
 
-def volume_leaders(limit=10):
+def volume_leaders(limit: int = 10) -> QuerySet[CoinPrice]:
     """Топ по объёму торгов за сутки в последнем снимке."""
     return CoinPrice.objects.filter(snapshot__in=_latest_snapshot()).order_by(
         "-total_volume"
     )[:limit]
 
 
-def filter_coins(symbol=None, min_price=None, max_price=None):
+def filter_coins(
+    symbol: str | None = None,
+    min_price: Decimal | None = None,
+    max_price: Decimal | None = None,
+) -> QuerySet[CoinPrice]:
     """Монеты с необязательными фильтрами; None означает «фильтр не задан»."""
     queryset = CoinPrice.objects.select_related("snapshot").order_by(
         "-snapshot__created_at", "-id"
@@ -108,7 +115,7 @@ def filter_coins(symbol=None, min_price=None, max_price=None):
     return queryset
 
 
-def collect_snapshot(source_name=None):
+def collect_snapshot(source_name: str | None = None) -> dict[str, int | str]:
     """Запрашивает цены у биржи и сохраняет снимок одной транзакцией.
 
     Специально НЕ содержит своей логики повторных попыток — вызывающий код
