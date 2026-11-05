@@ -21,3 +21,4 @@ djangorestframework-simplejwt==5.5.1
 
 # Зависимости разработки
 django-debug-toolbar==8.0.0
+ruff==0.17.3
