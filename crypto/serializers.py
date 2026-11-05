@@ -72,7 +72,7 @@ class CoinFilterSerializer(serializers.Serializer):
 
 
 class SnapshotCollectSerializer(serializers.Serializer):
-    source = serializers.ChoiceField(choices=list(SOURCES), required=False)
+    source = serializers.ChoiceField(choices=list(SOURCES), required=False)  # type: ignore[assignment]
 
 
 class MarketStatsSerializer(serializers.Serializer):

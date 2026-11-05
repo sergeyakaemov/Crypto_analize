@@ -22,3 +22,7 @@ djangorestframework-simplejwt==5.5.1
 # Зависимости разработки
 django-debug-toolbar==8.0.0
 ruff==0.17.3
+django-stubs==6.1.2
+djangorestframework-stubs==3.18.2
+mypy==2.4.1
+types-requests==2.33.0.20261030

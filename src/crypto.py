@@ -21,7 +21,7 @@ from src.storage import (
 
 
 class BaseAPI(ABC):
-    URL = str
+    URL: str
 
     @abstractmethod
     def get_params(self):

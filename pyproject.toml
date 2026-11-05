@@ -4,3 +4,16 @@ exclude = ["crypto/migrations"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main"]
+exclude = ["crypto/migrations"]
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = "celery.*"
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
+
