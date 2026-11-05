@@ -1,3 +1,5 @@
+from typing import Any
+
 from rest_framework import serializers
 
 from .models import CoinPrice, Snapshot, WatchlistItem
@@ -61,7 +63,7 @@ class CoinFilterSerializer(serializers.Serializer):
         max_digits=24, decimal_places=12, required=False
     )
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         minimum = attrs.get("min_price")
         maximum = attrs.get("max_price")
         if minimum is not None and maximum is not None and minimum > maximum:

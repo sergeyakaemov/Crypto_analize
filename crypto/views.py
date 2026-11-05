@@ -1,4 +1,7 @@
+from typing import cast
+
 from celery.result import AsyncResult
+from django.contrib.auth.models import User
 from django.db.models import Count, QuerySet
 from rest_framework import permissions, status, viewsets
 from rest_framework.request import Request
@@ -48,19 +51,19 @@ class WatchlistViewSet(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
     lookup_value_regex = r"\d+"
 
-    def list(self, request):
-        items = services.list_watchlist(request.user)
+    def list(self, request: Request) -> Response:
+        items = services.list_watchlist(cast(User, request.user))
         page = self.paginate_queryset(items)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
 
-    def create(self, request):
+    def create(self, request: Request) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         try:
             item = services.add_to_watchlist(
-                request.user, serializer.validated_data["symbol"]
+                cast(User, request.user), serializer.validated_data["symbol"]
             )
         except services.SymbolNotFound:
             return Response(
@@ -80,9 +83,9 @@ class WatchlistViewSet(viewsets.GenericViewSet):
 
         return Response(self.get_serializer(item).data, status=status.HTTP_201_CREATED)
 
-    def destroy(self, request, pk=None):
+    def destroy(self, request: Request, pk: str) -> Response:
         try:
-            services.remove_from_watchlist(request.user, pk)
+            services.remove_from_watchlist(cast(User, request.user), pk)
         except services.WatchlistItemNotFound:
             return Response(
                 {"detail": "Не найдено."},
