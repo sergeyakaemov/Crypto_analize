@@ -1,5 +1,7 @@
 import pytest
 import requests
+from prompt_toolkit.key_binding.bindings.named_commands import backward_word
+from redis import backoff
 
 from crypto import tasks
 from crypto.models import Snapshot
@@ -58,11 +60,12 @@ def test_fetch_snapshot_task_gives_up_after_max_retries(mocker):
     assert get_json.call_count == 6, "ожидали первую попытку и 5 ретраев"
 
 
-def test_fetch_snapshot_task_retries_on_server_error_with_backoff(mocker, exchange_response):
-    """HTTP 503 — временная проблема биржи: задача повторяет запрос с
+@pytest.mark.parametrize("status_code", [503, 429])
+def test_fetch_snapshot_task_retries_on_temporary_http_error_with_backoff(mocker, exchange_response, status_code):
+    """HTTP 503, 429 — временная проблема биржи: задача повторяет запрос с
     экспоненциальной задержкой и в итоге выполняется успешно."""
     response = requests.Response()
-    response.status_code = 503
+    response.status_code = status_code
     error = requests.HTTPError(response=response)
     get_json = mocker.patch(
         "crypto.services.get_json",

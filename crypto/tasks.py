@@ -4,6 +4,7 @@ import requests
 from celery import shared_task
 
 from crypto import services
+from crypto.retry import TOO_MANY_REQUESTS
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +18,8 @@ NETWORK_ERRORS = (
 )
 
 
-class ExchangeServerError(Exception):
-    """Биржа ответила 5xx. Отдельный тип нужен, чтобы отправить эту ошибку через
+class TemporaryExchangeError(Exception):
+    """Биржа ответила 5xx, 429. Отдельный тип нужен, чтобы отправить эту ошибку через
     autoretry_for: retry_backoff и retry_jitter действуют только там, а ручной
     self.retry() без countdown ждёт фиксированные default_retry_delay (180 с)."""
 
@@ -26,15 +27,16 @@ class ExchangeServerError(Exception):
 def _is_retryable_http_error(error: requests.HTTPError) -> bool:
     """4xx — клиентская ошибка (неверные параметры, не найдено и т.п.):
     повторный одинаковый запрос даст тот же результат, ретраить бессмысленно.
+    Но 429 - исключение. У Coingecko это значит "Лимит исчерпан, приходи позже".
     5xx — проблема на стороне сервера биржи, обычно временная: есть смысл
     попробовать ещё раз."""
     status_code = error.response.status_code if error.response is not None else None
-    return status_code is not None and status_code >= 500
+    return status_code is not None and (status_code >= 500 or status_code == TOO_MANY_REQUESTS)
 
 
 @shared_task(
     bind=True,
-    autoretry_for=(*NETWORK_ERRORS, ExchangeServerError),
+    autoretry_for=(*NETWORK_ERRORS, TemporaryExchangeError),
     max_retries=5,
     retry_backoff=True,       # экспоненциальный backoff: 1с, 2с, 4с, 8с, 16с...
     retry_backoff_max=600,    # не ждать дольше 10 минут между попытками
@@ -47,8 +49,8 @@ def fetch_snapshot_task(self, source_name=None):
     autoretry_for покрывает "чистые" сетевые сбои (обрыв соединения, таймаут)
     — Celery сам поймает их и перевыполнит задачу с задержкой. HTTPError
     обрабатываем вручную ниже, потому что внутри него нужно смотреть код
-    статуса: 5xx превращаем в ExchangeServerError из autoretry_for, чтобы он
-    шёл через тот же backoff, что и сетевые ошибки, а 4xx — пробрасываем
+    статуса: 5xx, 429 превращаем в TemporaryExchangeError из autoretry_for, чтобы он
+    шёл через тот же backoff, что и сетевые ошибки, а остальные 4xx — пробрасываем
     сразу, без единой попытки повтора. Ошибки, не связанные с сетью
     (IntegrityError, ImproperlyConfigured и т.п.), никак не перехватываются
     и падают как есть — это осознанно: ретраить баг в данных или в коде
@@ -64,7 +66,7 @@ def fetch_snapshot_task(self, source_name=None):
                 "[task=%s] сервер биржи ответил %s — ретраим",
                 self.request.id, error.response.status_code,
             )
-            raise ExchangeServerError(
+            raise TemporaryExchangeError(
                 f"биржа ответила {error.response.status_code}"
             ) from error
         logger.error(
