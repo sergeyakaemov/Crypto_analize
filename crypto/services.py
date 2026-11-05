@@ -1,8 +1,10 @@
 import logging
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.db.models import Avg, Max, Min, Sum
 
+from crypto.client import get_json
 from crypto.models import CoinPrice, Snapshot, WatchlistItem, normalize_symbol
 from crypto.sources import ProviderError, get_provider
 
@@ -110,3 +112,34 @@ def filter_coins(symbol=None, min_price=None, max_price=None):
         queryset = queryset.filter(price__lte=max_price)
 
     return queryset
+
+
+def collect_snapshot(source_name=None):
+    """Запрашивает цены у биржи и сохраняет снимок одной транзакцией.
+
+    Специально НЕ содержит своей логики повторных попыток — вызывающий код
+    (Celery-задача crypto.tasks.fetch_snapshot_task) сам решает, какие ошибки
+    ретраить и с какой задержкой. Так бизнес-логика (что делать) остаётся
+    отделена от политики обработки сбоев (что делать, если не получилось).
+    """
+    name = source_name or settings.EXCHANGE_PROVIDER
+    source = get_provider(name)
+
+    data = get_json(
+        source.URL,
+        params=source.params(),
+        headers=source.headers(),
+        timeout=30,
+    )
+    rows = source.normalize(data)
+
+    with transaction.atomic():
+        snapshot = Snapshot.objects.create(source=name)
+        CoinPrice.objects.bulk_create([
+            CoinPrice(snapshot=snapshot, **row)
+            for row in rows
+        ])
+
+    logger.info("Снимок #%s сохранён: %s монет (источник=%s)", snapshot.pk, len(rows), name)
+
+    return {'snapshot_id': snapshot.pk, 'coins_count': len(rows), 'source': name}

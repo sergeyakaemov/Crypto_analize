@@ -1,3 +1,4 @@
+from celery.result import AsyncResult
 from django.db.models import Count
 from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
@@ -9,11 +10,13 @@ from .serializers import (
     CoinFilterSerializer,
     CoinHistorySerializer,
     CoinPriceSerializer,
+    SnapshotCollectSerializer,
     SnapshotDetailSerializer,
     SnapshotSerializer,
     WatchlistItemSerializer,
     MarketStatsSerializer,
 )
+from .tasks import fetch_snapshot_task
 
 
 class SnapshotViewSet(viewsets.ReadOnlyModelViewSet):
@@ -104,3 +107,47 @@ class VolumeLeadersView(APIView):
 
     def get(self, request):
         return Response(CoinPriceSerializer(services.volume_leaders(), many=True).data)
+
+
+class SnapshotCollectView(APIView):
+    """Ставит в очередь задачу сбора снимка. Не делает работу сама —
+    вся логика живёт в crypto.tasks.fetch_snapshot_task."""
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        # Проверяем запрос ДО постановки в очередь: неверный вход пользователя
+        # разумно отбивать сразу синхронным 400, не тратя время воркера и не
+        # пряча ошибку внутрь асинхронной задачи.
+        serializer = SnapshotCollectSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        result = fetch_snapshot_task.delay(serializer.validated_data.get('source'))
+
+        # 202 Accepted: запрос принят к обработке, но ресурс (снимок) ещё
+        # не создан — задача могла даже не начать выполняться к моменту
+        # этого ответа. Тело ответа поэтому не Snapshot, а идентификатор
+        # задачи, по которому можно спросить результат отдельно.
+        return Response(
+            {'task_id': result.id, 'status': result.status},
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+
+class TaskStatusView(APIView):
+    """Статус и результат произвольной Celery-задачи по её task_id."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, task_id):
+        result = AsyncResult(task_id)
+
+        payload = {'task_id': task_id, 'status': result.status}
+
+        if result.ready():
+            if result.successful():
+                payload['result'] = result.result
+            else:
+                # В случае ошибки result.result — это сам объект исключения,
+                # а не JSON-сериализуемые данные, поэтому отдаём его как текст.
+                payload['error'] = str(result.result)
+
+        return Response(payload)

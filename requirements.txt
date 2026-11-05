@@ -3,6 +3,8 @@ requests==2.34.2
 python-dotenv==1.2.2
 typer==0.26.7
 rich==15.0.0
+celery==5.5.3
+redis==5.2.1
 
 # Зависимости тестов
 pytest==9.0.3
