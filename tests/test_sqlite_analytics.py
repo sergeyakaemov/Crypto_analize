@@ -1,5 +1,5 @@
-from src.storage import SqliteStorage
 from src.sqlite_analytics import SqliteAnalytics
+from src.storage import SqliteStorage
 
 
 def test_list_snapshots(connection, make_coin, make_report):
@@ -78,11 +78,13 @@ def test_top_price_changes(connection, make_coin, make_report):
     storage = SqliteStorage(connection)
 
     storage.save(
-        make_report([
-            make_coin("BTC", "Bitcoin", price=100_000, price_change=10),
-            make_coin("ETH", "Ethereum", price=3_000, price_change=-5),
-            make_coin("SOL", "Solana", price=200, price_change=7),
-        ])
+        make_report(
+            [
+                make_coin("BTC", "Bitcoin", price=100_000, price_change=10),
+                make_coin("ETH", "Ethereum", price=3_000, price_change=-5),
+                make_coin("SOL", "Solana", price=200, price_change=7),
+            ]
+        )
     )
 
     analytics = SqliteAnalytics(connection)

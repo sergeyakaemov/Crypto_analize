@@ -1,62 +1,61 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
-from crypto.models import Snapshot, CoinPrice
+
+from crypto.models import CoinPrice, Snapshot
 
 
 class SnapShotApiTests(APITestCase):
     def setUp(self):
         for _ in range(12):
-            Snapshot.objects.create(source='coingecko')
+            Snapshot.objects.create(source="coingecko")
 
     def test_list_is_paginated(self):
-        response = self.client.get('/api/snapshots/')
+        response = self.client.get("/api/snapshots/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 12)
-        self.assertEqual(len(response.data['results']), 10)
+        self.assertEqual(response.data["count"], 12)
+        self.assertEqual(len(response.data["results"]), 10)
 
     def test_create_is_not_allowed(self):
-        response = self.client.post('/api/snapshots/', {'source': 'coingecko'})
+        response = self.client.post("/api/snapshots/", {"source": "coingecko"})
 
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class CoinApiTests(APITestCase):
-
     def setUp(self):
-        self.snapshot = Snapshot.objects.create(source='coingecko')
+        self.snapshot = Snapshot.objects.create(source="coingecko")
         CoinPrice.objects.create(
             snapshot=self.snapshot,
-            name ='Bitcoin',
-            symbol='BTC',
+            name="Bitcoin",
+            symbol="BTC",
             price=1,
             market_cap=1,
             total_volume=1,
-            )
+        )
 
         CoinPrice.objects.create(
             snapshot=self.snapshot,
-            name='Ethereum',
-            symbol='ETH',
+            name="Ethereum",
+            symbol="ETH",
             price=1,
             market_cap=1,
             total_volume=1,
-            )
+        )
 
     def test_filter_by_symbol(self):
-        response = self.client.get('/api/coins/?symbol=BTC')
+        response = self.client.get("/api/coins/?symbol=BTC")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data["count"], 1)
 
     def test_filter_is_case_insensitive(self):
-        response = self.client.get('/api/coins/?symbol=btc')
+        response = self.client.get("/api/coins/?symbol=btc")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data["count"], 1)
 
     def test_detail_contains_prices(self):
-        response = self.client.get(f'/api/snapshots/{self.snapshot.id}/')
+        response = self.client.get(f"/api/snapshots/{self.snapshot.id}/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['prices']), 2)
-
+        self.assertEqual(len(response.data["prices"]), 2)

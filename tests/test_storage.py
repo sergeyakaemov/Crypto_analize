@@ -19,10 +19,7 @@ def test_sqlite_storage_creates_tables(connection):
         """
     )
 
-    tables = {
-        row[0]
-        for row in cursor.fetchall()
-    }
+    tables = {row[0] for row in cursor.fetchall()}
 
     assert "snapshots" in tables
     assert "coin_prices" in tables
@@ -36,15 +33,11 @@ def test_sqlite_storage_save(connection, report):
 
     cursor = connection.cursor()
 
-    cursor.execute(
-        "SELECT COUNT(*) FROM snapshots"
-    )
+    cursor.execute("SELECT COUNT(*) FROM snapshots")
 
     snapshots = cursor.fetchone()[0]
 
-    cursor.execute(
-        "SELECT COUNT(*) FROM coin_prices"
-    )
+    cursor.execute("SELECT COUNT(*) FROM coin_prices")
 
     coins = cursor.fetchone()[0]
 
@@ -78,7 +71,7 @@ def test_foreign_key_is_enforced(connection):
             (snapshot_id, name, symbol, price)
             VALUES (?, ?, ?, ?)
             """,
-            (999, "Bitcoin", "BTC", 100_000)
+            (999, "Bitcoin", "BTC", 100_000),
         )
 
 

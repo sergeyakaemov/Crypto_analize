@@ -27,6 +27,7 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"Задача поставлена в очередь: task_id={result.id}. "
-                f"Статус можно проверить через API или `celery -A config result {result.id}`."
+                "Статус можно проверить через API или "
+                f"`celery -A config result {result.id}`."
             )
         )

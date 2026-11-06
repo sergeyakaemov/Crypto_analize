@@ -1,6 +1,5 @@
 import pytest
 
-
 from crypto import services, sources
 from crypto.models import WatchlistItem
 
