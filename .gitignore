@@ -29,3 +29,7 @@ check_db.py
 
 # Рабочие заметки
 WATCHLIST_PLAN.md
+.claude-handoff.md
+
+# Celery Beat — файл состояния file-based планировщика
+celerybeat-schedule*
