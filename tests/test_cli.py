@@ -5,7 +5,6 @@ from src.crypto import app
 from src.settings import settings
 from src.storage import SqliteStorage, connect
 
-
 runner = CliRunner()
 
 

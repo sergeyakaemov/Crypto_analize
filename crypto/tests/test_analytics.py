@@ -77,7 +77,8 @@ def test_top_movers_sorted_by_change_descending(make_snapshot):
 
 
 def test_top_movers_excludes_coins_without_change(make_snapshot):
-    """NULL в Postgres больше любого числа — без фильтра такие монеты возглавили бы топ."""
+    """NULL в Postgres больше любого числа —
+    без фильтра такие монеты возглавили бы топ."""
     make_snapshot(price_change_24h=[5, None, 10, None])
 
     response = APIClient().get(reverse("top-movers"))
@@ -133,7 +134,11 @@ def test_volume_leaders_sorted_by_volume_descending(make_snapshot):
 
     response = APIClient().get(reverse("volume-leaders"))
 
-    assert [coin["total_volume"] for coin in response.data] == ["300.00", "50.00", "10.00"]
+    assert [coin["total_volume"] for coin in response.data] == [
+        "300.00",
+        "50.00",
+        "10.00",
+    ]
 
 
 def test_volume_leaders_returns_at_most_ten(make_snapshot):

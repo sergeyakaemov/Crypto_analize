@@ -23,14 +23,12 @@ def connect(db_name):
 
 
 class BaseStorage(ABC):
-
     @abstractmethod
     def save(self, report: dict) -> None:
         pass
 
 
 class JsonStorage(BaseStorage):
-
     def __init__(self, filename="report.json"):
         self.filename = filename
 
@@ -40,7 +38,6 @@ class JsonStorage(BaseStorage):
 
 
 class CsvStorage(BaseStorage):
-
     def __init__(self, filename="report.csv"):
         self.filename = filename
 
@@ -96,17 +93,20 @@ class SqliteStorage(BaseStorage):
         with self.connection:
             cursor = self.connection.cursor()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO snapshots
                 (created_at, coins_count)
                 VALUES (?, ?)
                 """,
-                (report["generated_at"], report["coins_count"],)
+                (
+                    report["generated_at"],
+                    report["coins_count"],
+                ),
             )
             snapshot_id = cursor.lastrowid
 
             for coin in report["coins"]:
-
                 cursor.execute(
                     """
                     INSERT INTO coin_prices
@@ -129,5 +129,5 @@ class SqliteStorage(BaseStorage):
                         coin["price_change_percentage_24h"],
                         coin["market_cap"],
                         coin["total_volume"],
-                    )
+                    ),
                 )

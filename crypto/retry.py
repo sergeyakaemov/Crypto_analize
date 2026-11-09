@@ -4,8 +4,10 @@ import requests
 
 TOO_MANY_REQUESTS = 429
 
+
 def retry(max_attempts=3, delay=2):
     """Повторяет запрос при временных сбоях; из 4xx повторяет только 429."""
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             last_error = None

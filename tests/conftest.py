@@ -1,4 +1,5 @@
 import pytest
+
 from src.crypto import Coin
 from src.storage import connect
 
@@ -26,6 +27,7 @@ def eth():
         total_volume=300_000,
     )
 
+
 @pytest.fixture
 def coins(btc, eth):
     return [btc, eth]
@@ -41,6 +43,7 @@ def connection():
 @pytest.fixture
 def make_coin():
     """Фабрика монеты для отчёта: цена и изменение задаются параметрами."""
+
     def make(
         symbol="BTC",
         name="Bitcoin",
@@ -64,6 +67,7 @@ def make_coin():
 @pytest.fixture
 def make_report():
     """Фабрика отчёта: набор монет и время снимка задаются параметрами."""
+
     def make(coins, generated_at="2026-07-20T10:00:00"):
         return {
             "generated_at": generated_at,
@@ -78,14 +82,16 @@ def make_report():
 @pytest.fixture
 def report(make_coin, make_report):
     """Готовый отчёт из двух монет — самый частый случай в тестах."""
-    return make_report([
-        make_coin("BTC", "Bitcoin", price=100_000, price_change=5.5),
-        make_coin(
-            "ETH",
-            "Ethereum",
-            price=3_000,
-            price_change=-2.1,
-            market_cap=1_000_000,
-            total_volume=200_000,
-        ),
-    ])
+    return make_report(
+        [
+            make_coin("BTC", "Bitcoin", price=100_000, price_change=5.5),
+            make_coin(
+                "ETH",
+                "Ethereum",
+                price=3_000,
+                price_change=-2.1,
+                market_cap=1_000_000,
+                total_volume=200_000,
+            ),
+        ]
+    )

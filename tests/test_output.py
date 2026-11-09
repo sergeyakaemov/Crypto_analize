@@ -1,8 +1,4 @@
-from src.crypto import JsonStorage
-from src.crypto import ConsoleOutput
-from src.crypto import CsvStorage
-from src.crypto import FileOutput
-from src.crypto import OUTPUTS
+from src.crypto import OUTPUTS, ConsoleOutput, CsvStorage, FileOutput, JsonStorage
 
 
 def test_json_output(mocker):
@@ -18,17 +14,10 @@ def test_console_output(mocker):
     mock_console = mocker.Mock()
     output = ConsoleOutput(console=mock_console)
     report = {
-        "top_up": [
-            {"name": "Bitcoin", "price_change_percentage_24h": 5.5}
-        ],
-        "top_down": [
-            {"name": "Ethereum", "price_change_percentage_24h": 2.5}
-        ],
-        "volume_leader": {
-            "name": "Bitcoin",
-            "total_volume": 500000
-        },
-        "market_cap": 3000000
+        "top_up": [{"name": "Bitcoin", "price_change_percentage_24h": 5.5}],
+        "top_down": [{"name": "Ethereum", "price_change_percentage_24h": 2.5}],
+        "volume_leader": {"name": "Bitcoin", "total_volume": 500000},
+        "market_cap": 3000000,
     }
     output.save(report)
     mock_console.print.assert_called_once()
@@ -38,11 +27,7 @@ def test_csv_output(mocker):
     mock_open = mocker.mock_open()
     mocker.patch("builtins.open", mock_open)
     storage = CsvStorage("test.csv")
-    report = {
-        "generated_at": "2026-01-01",
-        "coins_count": 2,
-        "market_cap": 3000000
-    }
+    report = {"generated_at": "2026-01-01", "coins_count": 2, "market_cap": 3000000}
     storage.save(report)
     mock_open.assert_called_once_with("test.csv", "w", newline="", encoding="utf-8")
 
@@ -93,19 +78,7 @@ def test_csv_output_writes_file(mocker):
     mocker.patch("builtins.open", mock_open)
     mock_console = mocker.Mock()
     output = FileOutput(mock_console, CsvStorage("test.csv"))
-    report = {
-        "generated_at": "2026-01-01",
-        "coins_count": 2,
-        "market_cap": 3000000
-    }
+    report = {"generated_at": "2026-01-01", "coins_count": 2, "market_cap": 3000000}
     output.save(report)
     mock_open.assert_called_once_with("test.csv", "w", newline="", encoding="utf-8")
     mock_console.print.assert_called_once()
-
-
-
-
-
-
-
-

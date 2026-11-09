@@ -5,7 +5,8 @@ from crypto.retry import retry
 
 
 def http_error(status_code):
-    """HTTPError с нужным кодом ответа — retry смотрит именно на response.status_code."""
+    """HTTPError с нужным кодом ответа —
+    retry смотрит именно на response.status_code."""
     response = requests.Response()
     response.status_code = status_code
     return requests.HTTPError(response=response)

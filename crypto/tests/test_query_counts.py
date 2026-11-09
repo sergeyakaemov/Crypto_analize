@@ -23,7 +23,9 @@ def test_coin_list_query_count_does_not_grow(make_snapshot, django_assert_num_qu
     assert response.status_code == 200
 
 
-def test_snapshot_list_query_count_does_not_grow(make_snapshot, django_assert_num_queries):
+def test_snapshot_list_query_count_does_not_grow(
+    make_snapshot, django_assert_num_queries
+):
     """Число запросов не зависит от числа снимков — иначе вернулся N+1."""
     client = APIClient()
     url = reverse("snapshot-list")
@@ -54,6 +56,8 @@ def test_snapshot_model_ordering_is_deterministic():
     """При совпавшем created_at порядок задаёт вторичный ключ по id."""
     older = Snapshot.objects.create(source="coingecko")
     newer = Snapshot.objects.create(source="coingecko")
-    Snapshot.objects.filter(pk__in=[older.pk, newer.pk]).update(created_at=older.created_at)
+    Snapshot.objects.filter(pk__in=[older.pk, newer.pk]).update(
+        created_at=older.created_at
+    )
 
     assert list(Snapshot.objects.all()) == [newer, older]
