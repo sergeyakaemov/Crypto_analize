@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from . import services
 from .models import CoinPrice, Snapshot
+from .permissions import IsAdminOrReadOnly
 from .serializers import (
     CoinFilterSerializer,
     CoinHistorySerializer,
@@ -120,7 +121,7 @@ class SnapshotCollectView(APIView):
     """Ставит в очередь задачу сбора снимка. Не делает работу сама —
     вся логика живёт в crypto.tasks.fetch_snapshot_task."""
 
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAdminOrReadOnly]
 
     def post(self, request: Request) -> Response:
         # Проверяем запрос ДО постановки в очередь: неверный вход пользователя
