@@ -1,5 +1,6 @@
 import pytest
 import requests
+from rest_framework.test import APIClient
 
 from crypto.models import CoinPrice, Snapshot
 
@@ -85,3 +86,17 @@ def make_snapshot(db):
         return snapshot
 
     return make
+
+
+@pytest.fixture
+def admin_api_client(admin_user):
+    client = APIClient()
+    client.force_authenticate(user=admin_user)
+    return client
+
+
+@pytest.fixture
+def user_api_client(user):
+    client = APIClient()
+    client.force_authenticate(user=user)
+    return client
