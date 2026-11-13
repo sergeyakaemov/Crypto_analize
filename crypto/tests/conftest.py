@@ -1,5 +1,6 @@
 import pytest
 import requests
+from django.core.cache import cache
 from rest_framework.test import APIClient
 
 from crypto.models import CoinPrice, Snapshot
@@ -100,3 +101,10 @@ def user_api_client(user):
     client = APIClient()
     client.force_authenticate(user=user)
     return client
+
+
+@pytest.fixture(autouse=True)
+def clear_cache():
+    """Очистка кэша для каждого теста"""
+
+    cache.clear()
