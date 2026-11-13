@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "crypto",
     "debug_toolbar",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -154,11 +155,28 @@ REST_FRAMEWORK = {
         "crypto.throttling.AdminRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {"anon": "5/min", "user": "100/min", "admin": "1000/min"},
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Crypto analyzer API",
+    "DESCRIPTION": (
+        "API крипто-анализатора.\n\n"
+        "- **Снимки рынка** собираются фоновой задачей Celery с "
+        "CoinGecko / CoinMarketCap\n"
+        "- **История цен** монет с фильтрацией\n"
+        "- **Аналитика**: статистика рынка, лидеры роста и объёма\n"
+        "- **Watchlist**: личный список монет пользователя\n\n"
+        "Авторизация — JWT: получите access-токен в `POST /api/token/` "
+        "и нажмите **Authorize**."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
 }
 
 
