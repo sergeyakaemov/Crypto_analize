@@ -3,6 +3,7 @@ from typing import cast
 from celery.result import AsyncResult
 from django.contrib.auth.models import User
 from django.db.models import Count, QuerySet
+from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status, viewsets
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -99,6 +100,7 @@ class WatchlistViewSet(viewsets.GenericViewSet):
 class MarketStatsView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(summary="Статистика рынка", responses=MarketStatsSerializer)
     def get(self, request: Request) -> Response:
         return Response(MarketStatsSerializer(services.market_stats()).data)
 
@@ -106,6 +108,7 @@ class MarketStatsView(APIView):
 class TopMoversView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(summary="Лидеры роста", responses=CoinPriceSerializer(many=True))
     def get(self, request: Request) -> Response:
         return Response(CoinPriceSerializer(services.top_movers(), many=True).data)
 
@@ -113,6 +116,9 @@ class TopMoversView(APIView):
 class VolumeLeadersView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+        summary="Лидеры по объёму торгов", responses=CoinPriceSerializer(many=True)
+    )
     def get(self, request: Request) -> Response:
         return Response(CoinPriceSerializer(services.volume_leaders(), many=True).data)
 
