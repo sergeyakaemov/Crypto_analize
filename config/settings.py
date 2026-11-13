@@ -150,9 +150,10 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 10,
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
+        "crypto.throttling.NonAdminUserRateThrottle",
+        "crypto.throttling.AdminRateThrottle",
     ],
-    "DEFAULT_THROTTLE_RATES": {"anon": "5/min", "user": "100/min"},
+    "DEFAULT_THROTTLE_RATES": {"anon": "5/min", "user": "100/min", "admin": "1000/min"},
 }
 
 SIMPLE_JWT = {
