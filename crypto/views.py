@@ -194,6 +194,55 @@ class TaskStatusView(APIView):
 
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+        summary="Статус задачи",
+        responses={
+            200: inline_serializer(
+                name="TaskStatus",
+                fields={
+                    "task_id": serializers.CharField(),
+                    "status": serializers.CharField(),
+                    "result": serializers.JSONField(required=False),
+                    "error": serializers.CharField(required=False),
+                },
+            ),
+        },
+        examples=[
+            OpenApiExample(
+                "Задача ещё выполняется",
+                value={
+                    "task_id": "5b1e6a8c-2f0d-4c7e-9a43-1d2b3c4d5e6f",
+                    "status": "PENDING",
+                },
+                response_only=True,
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                "Снимок собран",
+                value={
+                    "task_id": "5b1e6a8c-2f0d-4c7e-9a43-1d2b3c4d5e6f",
+                    "status": "SUCCESS",
+                    "result": {
+                        "snapshot_id": 42,
+                        "coins_count": 100,
+                        "source": "coingecko",
+                    },
+                },
+                response_only=True,
+                status_codes=["200"],
+            ),
+            OpenApiExample(
+                "Задача упала",
+                value={
+                    "task_id": "5b1e6a8c-2f0d-4c7e-9a43-1d2b3c4d5e6f",
+                    "status": "FAILURE",
+                    "error": "HTTPError: 404 Client Error",
+                },
+                response_only=True,
+                status_codes=["200"],
+            ),
+        ],
+    )
     def get(self, request: Request, task_id: str) -> Response:
         result = AsyncResult(task_id)
 
