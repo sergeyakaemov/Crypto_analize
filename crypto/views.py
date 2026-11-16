@@ -3,8 +3,13 @@ from typing import cast
 from celery.result import AsyncResult
 from django.contrib.auth.models import User
 from django.db.models import Count, QuerySet
-from drf_spectacular.utils import extend_schema
-from rest_framework import permissions, status, viewsets
+from drf_spectacular.utils import (
+    OpenApiExample,
+    OpenApiResponse,
+    extend_schema,
+    inline_serializer,
+)
+from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import BaseSerializer
@@ -129,6 +134,42 @@ class SnapshotCollectView(APIView):
 
     permission_classes = [IsAdminOrReadOnly]
 
+    @extend_schema(
+        summary="Запуск сбора снимка",
+        request=SnapshotCollectSerializer,
+        responses={
+            202: inline_serializer(
+                name="SnapshotCollectQueued",
+                fields={
+                    "task_id": serializers.CharField(),
+                    "status": serializers.CharField(),
+                },
+            ),
+            400: OpenApiResponse(
+                description="source не из списка: coingecko / coinmarketcap"
+            ),
+            401: OpenApiResponse(description="Нет JWT-токена или он недействителен."),
+            403: OpenApiResponse(
+                description="Пользователь авторизован, но не администратор (is_staff)."
+            ),
+        },
+        examples=[
+            OpenApiExample(
+                "Сбор из Сoingecko",
+                value={"source": "coingecko"},
+                request_only=True,
+            ),
+            OpenApiExample(
+                "Задача поставлена в очередь",
+                value={
+                    "task_id": "5b1e6a8c-2f0d-4c7e-9a43-1d2b3c4d5e6f",
+                    "status": "PENDING",
+                },
+                response_only=True,
+                status_codes=["202"],
+            ),
+        ],
+    )
     def post(self, request: Request) -> Response:
         # Проверяем запрос ДО постановки в очередь: неверный вход пользователя
         # разумно отбивать сразу синхронным 400, не тратя время воркера и не
