@@ -38,6 +38,8 @@ class SnapshotViewSet(viewsets.ReadOnlyModelViewSet):
         total_market_cap=Sum("prices__market_cap", default=0),
     ).order_by("-created_at", "-id")
     permission_classes = [permissions.AllowAny]
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ["created_at", "total_market_cap"]
 
     def get_serializer_class(self) -> type[BaseSerializer]:
         if self.action == "retrieve":
