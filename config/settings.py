@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "crypto",
     "debug_toolbar",
     "drf_spectacular",
+    "django_filters",
 ]
 
 MIDDLEWARE = [

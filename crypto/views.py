@@ -2,7 +2,8 @@ from typing import cast
 
 from celery.result import AsyncResult
 from django.contrib.auth.models import User
-from django.db.models import Count, QuerySet
+from django.db.models import Count
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiResponse,
@@ -16,10 +17,10 @@ from rest_framework.serializers import BaseSerializer
 from rest_framework.views import APIView
 
 from . import services
+from .filters import CoinPriceFilter
 from .models import CoinPrice, Snapshot
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
-    CoinFilterSerializer,
     CoinHistorySerializer,
     CoinPriceSerializer,
     MarketStatsSerializer,
@@ -44,13 +45,13 @@ class SnapshotViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class CoinPriceViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = CoinPrice.objects.select_related("snapshot").order_by(
+        "-snapshot__created_at", "-id"
+    )
     serializer_class = CoinHistorySerializer
     permission_classes = [permissions.AllowAny]
-
-    def get_queryset(self) -> QuerySet[CoinPrice]:
-        filters = CoinFilterSerializer(data=self.request.query_params)
-        filters.is_valid(raise_exception=True)
-        return services.filter_coins(**filters.validated_data)
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CoinPriceFilter
 
 
 class WatchlistViewSet(viewsets.GenericViewSet):
