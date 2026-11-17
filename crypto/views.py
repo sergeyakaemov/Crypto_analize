@@ -2,7 +2,7 @@ from typing import cast
 
 from celery.result import AsyncResult
 from django.contrib.auth.models import User
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -33,9 +33,10 @@ from .tasks import fetch_snapshot_task
 
 
 class SnapshotViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Snapshot.objects.annotate(prices_count=Count("prices")).order_by(
-        "-created_at", "-id"
-    )
+    queryset = Snapshot.objects.annotate(
+        prices_count=Count("prices"),
+        total_market_cap=Sum("prices__market_cap", default=0),
+    ).order_by("-created_at", "-id")
     permission_classes = [permissions.AllowAny]
 
     def get_serializer_class(self) -> type[BaseSerializer]:

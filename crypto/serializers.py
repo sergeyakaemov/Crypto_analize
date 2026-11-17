@@ -19,10 +19,13 @@ class CoinPriceSerializer(serializers.ModelSerializer):
 
 class SnapshotSerializer(serializers.ModelSerializer):
     prices_count = serializers.IntegerField(read_only=True)
+    total_market_cap = serializers.DecimalField(
+        max_digits=30, decimal_places=2, read_only=True
+    )
 
     class Meta:
         model = Snapshot
-        fields = ["id", "created_at", "source", "prices_count"]
+        fields = ["id", "created_at", "source", "prices_count", "total_market_cap"]
 
 
 class SnapshotDetailSerializer(SnapshotSerializer):
