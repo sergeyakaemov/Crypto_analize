@@ -19,6 +19,7 @@ from rest_framework.views import APIView
 from . import services
 from .filters import CoinPriceFilter
 from .models import CoinPrice, Snapshot
+from .pagination import CoinCursorPagination
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
     CoinHistorySerializer,
@@ -48,14 +49,13 @@ class SnapshotViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class CoinPriceViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = CoinPrice.objects.select_related("snapshot").order_by(
-        "-snapshot__created_at", "-id"
-    )
+    queryset = CoinPrice.objects.select_related("snapshot")
     serializer_class = CoinHistorySerializer
     permission_classes = [permissions.AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = CoinPriceFilter
     search_fields = ["symbol", "name"]
+    pagination_class = CoinCursorPagination
 
 
 class WatchlistViewSet(viewsets.GenericViewSet):

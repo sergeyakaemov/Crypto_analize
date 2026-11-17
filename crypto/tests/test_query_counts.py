@@ -13,12 +13,12 @@ def test_coin_list_query_count_does_not_grow(make_snapshot, django_assert_num_qu
     url = reverse("coinprice-list")
 
     make_snapshot(coins=3)
-    with django_assert_num_queries(2):
+    with django_assert_num_queries(1):
         response = client.get(url)
     assert response.status_code == 200
 
     make_snapshot(coins=10)
-    with django_assert_num_queries(2):
+    with django_assert_num_queries(1):
         response = client.get(url)
     assert response.status_code == 200
 
