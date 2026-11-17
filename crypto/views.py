@@ -10,7 +10,7 @@ from drf_spectacular.utils import (
     extend_schema,
     inline_serializer,
 )
-from rest_framework import permissions, serializers, status, viewsets
+from rest_framework import filters, permissions, serializers, status, viewsets
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import BaseSerializer
@@ -50,8 +50,9 @@ class CoinPriceViewSet(viewsets.ReadOnlyModelViewSet):
     )
     serializer_class = CoinHistorySerializer
     permission_classes = [permissions.AllowAny]
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = CoinPriceFilter
+    search_fields = ["symbol", "name"]
 
 
 class WatchlistViewSet(viewsets.GenericViewSet):

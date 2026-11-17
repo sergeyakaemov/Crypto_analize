@@ -69,3 +69,15 @@ def test_min_price_greater_than_max_returns_400(make_snapshot):
     )
 
     assert response.status_code == 400
+
+
+def test_search_by_symbol_or_name(make_snapshot):
+    make_snapshot(
+        price=[10, 20, 30],
+        symbol=["BITX", "BTC", "ETH"],
+        name=["Some Token", "Bitcoin", "Ethereum"],
+    )
+
+    response = APIClient().get(reverse("coinprice-list"), {"search": "bit"})
+
+    assert prices_from(response) == [10, 20]
