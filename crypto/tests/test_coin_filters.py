@@ -59,7 +59,7 @@ def test_invalid_min_price_returns_400(make_snapshot):
     response = APIClient().get(api_reverse("coinprice-list"), {"min_price": "abc"})
 
     assert response.status_code == 400
-    assert "min_price" in response.data
+    assert "min_price" in response.data["details"]
 
 
 def test_min_price_greater_than_max_returns_400(make_snapshot):

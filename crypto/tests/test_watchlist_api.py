@@ -111,7 +111,7 @@ def test_add_blank_symbol_returns_400_without_exchange_call(alice_client, provid
     response = alice_client.post(list_url(), {"symbol": ""})
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert "symbol" in response.data
+    assert "symbol" in response.data["details"]
     provider.symbol_exists.assert_not_called()
 
 
