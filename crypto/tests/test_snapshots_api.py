@@ -10,13 +10,13 @@ class SnapShotApiTests(APITestCase):
             Snapshot.objects.create(source="coingecko")
 
     def test_list_is_paginated(self):
-        response = self.client.get("/api/snapshots/")
+        response = self.client.get("/api/v1/snapshots/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 12)
         self.assertEqual(len(response.data["results"]), 10)
 
     def test_create_is_not_allowed(self):
-        response = self.client.post("/api/snapshots/", {"source": "coingecko"})
+        response = self.client.post("/api/v1/snapshots/", {"source": "coingecko"})
 
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
@@ -43,19 +43,19 @@ class CoinApiTests(APITestCase):
         )
 
     def test_filter_by_symbol(self):
-        response = self.client.get("/api/coins/?symbol=BTC")
+        response = self.client.get("/api/v1/coins/?symbol=BTC")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
 
     def test_filter_is_case_insensitive(self):
-        response = self.client.get("/api/coins/?symbol=btc")
+        response = self.client.get("/api/v1/coins/?symbol=btc")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
 
     def test_detail_contains_prices(self):
-        response = self.client.get(f"/api/snapshots/{self.snapshot.id}/")
+        response = self.client.get(f"/api/v1/snapshots/{self.snapshot.id}/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["prices"]), 2)

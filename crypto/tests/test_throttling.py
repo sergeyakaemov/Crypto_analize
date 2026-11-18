@@ -5,7 +5,7 @@ from crypto.throttling import AdminRateThrottle, NonAdminUserRateThrottle
 
 pytestmark = pytest.mark.django_db
 
-SNAPSHOTS_URL = "/api/snapshots/"
+SNAPSHOTS_URL = "/api/v1/snapshots/"
 
 
 def test_anonymous_gets_429_after_five_requests():

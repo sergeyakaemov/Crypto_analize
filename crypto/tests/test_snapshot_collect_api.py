@@ -38,7 +38,7 @@ def test_collect_returns_202_with_task_id(
 ):
     mocker.patch("crypto.services.get_json", return_value=exchange_response)
 
-    response = admin_api_client.post("/api/snapshots/collect/")
+    response = admin_api_client.post("/api/v1/snapshots/collect/")
 
     assert response.status_code == 202
     assert "task_id" in response.data
@@ -56,7 +56,7 @@ def test_collect_returns_202_with_task_id(
 )
 def test_collect_rejects_invalid_body(admin_api_client, mock_delay, body):
     """Неверный запрос отбивается сразу: 400 и никакой задачи в очереди."""
-    response = admin_api_client.post("/api/snapshots/collect/", body, format="json")
+    response = admin_api_client.post("/api/v1/snapshots/collect/", body, format="json")
 
     assert response.status_code == 400
     mock_delay.assert_not_called()
@@ -64,7 +64,7 @@ def test_collect_rejects_invalid_body(admin_api_client, mock_delay, body):
 
 def test_collect_passes_source_to_task(admin_api_client, mock_delay):
     response = admin_api_client.post(
-        "/api/snapshots/collect/", {"source": "coinmarketcap"}, format="json"
+        "/api/v1/snapshots/collect/", {"source": "coinmarketcap"}, format="json"
     )
 
     assert response.status_code == 202
@@ -77,10 +77,10 @@ def test_task_status_reports_success_and_result(
 
     mocker.patch("crypto.services.get_json", return_value=exchange_response)
 
-    collect_response = admin_api_client.post("/api/snapshots/collect/")
+    collect_response = admin_api_client.post("/api/v1/snapshots/collect/")
     task_id = collect_response.data["task_id"]
 
-    status_response = APIClient().get(f"/api/tasks/{task_id}/")
+    status_response = APIClient().get(f"/api/v1/tasks/{task_id}/")
 
     assert status_response.status_code == 200
     assert status_response.data["status"] == "SUCCESS"
@@ -90,7 +90,7 @@ def test_task_status_reports_success_and_result(
 def test_task_status_for_unknown_id_is_pending():
     """Несуществующий task_id — Celery не считает это ошибкой, просто говорит
     PENDING (не умеет отличить "ещё не начался" от "такого никогда не было")."""
-    response = APIClient().get("/api/tasks/00000000-0000-0000-0000-000000000000/")
+    response = APIClient().get("/api/v1/tasks/00000000-0000-0000-0000-000000000000/")
 
     assert response.status_code == 200
     assert response.data["status"] == "PENDING"
@@ -98,21 +98,21 @@ def test_task_status_for_unknown_id_is_pending():
 
 def test_collect_requires_authentification(mock_delay):
     """Аноним не может запустить сбор: 401, задача в очередь не ставится."""
-    response = APIClient().post("/api/snapshots/collect/")
+    response = APIClient().post("/api/v1/snapshots/collect/")
 
     assert response.status_code == 401
     mock_delay.assert_not_called()
 
 
 def test_collect_forbidden_for_non_admin(mock_delay, user_api_client):
-    response = user_api_client.post("/api/snapshots/collect/")
+    response = user_api_client.post("/api/v1/snapshots/collect/")
 
     assert response.status_code == 403
     mock_delay.assert_not_called()
 
 
 def test_collect_get_not_allowed(mock_delay, user_api_client):
-    response = user_api_client.get("/api/snapshots/collect/")
+    response = user_api_client.get("/api/v1/snapshots/collect/")
 
     assert response.status_code == 405
     mock_delay.assert_not_called()

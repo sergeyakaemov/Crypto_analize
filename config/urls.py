@@ -17,21 +17,25 @@ Including another URLconf
 
 from django.conf import settings
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import URLPattern, URLResolver, include, path, re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    path("api/schema/", SpectacularAPIView.as_view(throttle_classes=[]), name="schema"),
+api_v1_patterns: list[URLPattern | URLResolver] = [
+    path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("schema/", SpectacularAPIView.as_view(throttle_classes=[]), name="schema"),
     path(
-        "api/docs/",
+        "docs/",
         SpectacularSwaggerView.as_view(url_name="schema", throttle_classes=[]),
         name="swagger-ui",
     ),
-    path("api/", include("crypto.urls")),
+    path("", include("crypto.urls")),
+]
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    re_path(r"^api/(?P<version>v1)/", include(api_v1_patterns)),
 ]
 
 if settings.DEBUG:

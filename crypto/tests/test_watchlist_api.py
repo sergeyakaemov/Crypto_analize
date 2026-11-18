@@ -1,11 +1,11 @@
 import pytest
 import requests
-from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from crypto import sources
 from crypto.models import WatchlistItem
+from crypto.tests.helpers import api_reverse
 
 pytestmark = pytest.mark.django_db
 
@@ -13,16 +13,16 @@ PASSWORD = "pass12345"
 
 
 def list_url():
-    return reverse("watchlist-list")
+    return api_reverse("watchlist-list")
 
 
 def detail_url(pk):
-    return reverse("watchlist-detail", args=[pk])
+    return api_reverse("watchlist-detail", pk=pk)
 
 
 def login(client, username):
     response = client.post(
-        reverse("token_obtain_pair"),
+        api_reverse("token_obtain_pair"),
         {"username": username, "password": PASSWORD},
     )
     client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.data['access']}")
@@ -46,7 +46,7 @@ def bob_client(other_user):
 
 def test_token_obtain_returns_pair(anon_client, user):
     response = anon_client.post(
-        reverse("token_obtain_pair"),
+        api_reverse("token_obtain_pair"),
         {"username": user.username, "password": PASSWORD},
     )
 
@@ -56,7 +56,7 @@ def test_token_obtain_returns_pair(anon_client, user):
 
 def test_token_obtain_wrong_password_returns_401(anon_client, user):
     response = anon_client.post(
-        reverse("token_obtain_pair"),
+        api_reverse("token_obtain_pair"),
         {"username": user.username, "password": "wrong"},
     )
 
@@ -65,12 +65,12 @@ def test_token_obtain_wrong_password_returns_401(anon_client, user):
 
 def test_token_refresh_returns_new_access(anon_client, user):
     tokens = anon_client.post(
-        reverse("token_obtain_pair"),
+        api_reverse("token_obtain_pair"),
         {"username": user.username, "password": PASSWORD},
     ).data
 
     response = anon_client.post(
-        reverse("token_refresh"), {"refresh": tokens["refresh"]}
+        api_reverse("token_refresh"), {"refresh": tokens["refresh"]}
     )
 
     assert response.status_code == status.HTTP_200_OK

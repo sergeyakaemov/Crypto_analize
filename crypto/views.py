@@ -1,4 +1,4 @@
-from typing import cast
+from typing import Any, cast
 
 from celery.result import AsyncResult
 from django.contrib.auth.models import User
@@ -63,13 +63,13 @@ class WatchlistViewSet(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
     lookup_value_regex = r"\d+"
 
-    def list(self, request: Request) -> Response:
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         items = services.list_watchlist(cast(User, request.user))
         page = self.paginate_queryset(items)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
 
-    def create(self, request: Request) -> Response:
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -95,7 +95,7 @@ class WatchlistViewSet(viewsets.GenericViewSet):
 
         return Response(self.get_serializer(item).data, status=status.HTTP_201_CREATED)
 
-    def destroy(self, request: Request, pk: str) -> Response:
+    def destroy(self, request: Request, pk: str, *args: Any, **kwargs: Any) -> Response:
         try:
             services.remove_from_watchlist(cast(User, request.user), pk)
         except services.WatchlistItemNotFound:
@@ -111,7 +111,7 @@ class MarketStatsView(APIView):
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(summary="Статистика рынка", responses=MarketStatsSerializer)
-    def get(self, request: Request) -> Response:
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return Response(MarketStatsSerializer(services.market_stats()).data)
 
 
@@ -119,7 +119,7 @@ class TopMoversView(APIView):
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(summary="Лидеры роста", responses=CoinPriceSerializer(many=True))
-    def get(self, request: Request) -> Response:
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return Response(CoinPriceSerializer(services.top_movers(), many=True).data)
 
 
@@ -129,7 +129,7 @@ class VolumeLeadersView(APIView):
     @extend_schema(
         summary="Лидеры по объёму торгов", responses=CoinPriceSerializer(many=True)
     )
-    def get(self, request: Request) -> Response:
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         return Response(CoinPriceSerializer(services.volume_leaders(), many=True).data)
 
 
@@ -175,7 +175,7 @@ class SnapshotCollectView(APIView):
             ),
         ],
     )
-    def post(self, request: Request) -> Response:
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         # Проверяем запрос ДО постановки в очередь: неверный вход пользователя
         # разумно отбивать сразу синхронным 400, не тратя время воркера и не
         # пряча ошибку внутрь асинхронной задачи.
@@ -248,7 +248,9 @@ class TaskStatusView(APIView):
             ),
         ],
     )
-    def get(self, request: Request, task_id: str) -> Response:
+    def get(
+        self, request: Request, task_id: str, *args: Any, **kwargs: Any
+    ) -> Response:
         result = AsyncResult(task_id)
 
         payload = {"task_id": task_id, "status": result.status}
