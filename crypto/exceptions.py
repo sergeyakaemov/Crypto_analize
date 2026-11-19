@@ -2,9 +2,22 @@ import logging
 from typing import Any
 
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
+
+
+class Conflict(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = "Монета уже в списке."
+    default_code = "conflict"
+
+
+class ServiceUnavailable(APIException):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    default_detail = "Биржа недоступна, попробуйте позже."
+    default_code = "service_unavailable"
+
 
 logger = logging.getLogger(__name__)
 

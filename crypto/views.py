@@ -11,12 +11,14 @@ from drf_spectacular.utils import (
     inline_serializer,
 )
 from rest_framework import filters, permissions, serializers, status, viewsets
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import BaseSerializer
 from rest_framework.views import APIView
 
 from . import services
+from .exceptions import Conflict, ServiceUnavailable
 from .filters import CoinPriceFilter
 from .models import CoinPrice, Snapshot
 from .pagination import CoinCursorPagination
@@ -78,20 +80,11 @@ class WatchlistViewSet(viewsets.GenericViewSet):
                 cast(User, request.user), serializer.validated_data["symbol"]
             )
         except services.SymbolNotFound:
-            return Response(
-                {"detail": "Символ не найден на бирже."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValidationError({"symbol": "Символ не найден на бирже."})
         except services.AlreadyInWatchlist:
-            return Response(
-                {"detail": "Монета уже в списке."},
-                status=status.HTTP_409_CONFLICT,
-            )
+            raise Conflict()
         except services.ExchangeUnavailable:
-            return Response(
-                {"detail": "Биржа недоступна, попробуйте позже."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
+            raise ServiceUnavailable()
 
         return Response(self.get_serializer(item).data, status=status.HTTP_201_CREATED)
 
@@ -99,10 +92,7 @@ class WatchlistViewSet(viewsets.GenericViewSet):
         try:
             services.remove_from_watchlist(cast(User, request.user), pk)
         except services.WatchlistItemNotFound:
-            return Response(
-                {"detail": "Не найдено."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise NotFound("Не найдено.")
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
