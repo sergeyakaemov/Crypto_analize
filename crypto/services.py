@@ -95,26 +95,6 @@ def volume_leaders(limit: int = 10) -> QuerySet[CoinPrice]:
     )[:limit]
 
 
-def filter_coins(
-    symbol: str | None = None,
-    min_price: Decimal | None = None,
-    max_price: Decimal | None = None,
-) -> QuerySet[CoinPrice]:
-    """Монеты с необязательными фильтрами; None означает «фильтр не задан»."""
-    queryset = CoinPrice.objects.select_related("snapshot").order_by(
-        "-snapshot__created_at", "-id"
-    )
-
-    if symbol:
-        queryset = queryset.filter(symbol__iexact=symbol)
-    if min_price is not None:
-        queryset = queryset.filter(price__gte=min_price)
-    if max_price is not None:
-        queryset = queryset.filter(price__lte=max_price)
-
-    return queryset
-
-
 def collect_snapshot(source_name: str | None = None) -> dict[str, int | str]:
     """Запрашивает цены у биржи и сохраняет снимок одной транзакцией.
 
