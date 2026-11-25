@@ -104,7 +104,13 @@ def user_api_client(user):
 
 
 @pytest.fixture(autouse=True)
-def clear_cache():
-    """Очистка кэша для каждого теста"""
+def clear_cache(settings):
+    """Кеш в памяти вместо Redis и чистый перед каждым тестом.
 
+    Тестам не нужен запущенный Redis, а cache.clear() не стирает
+    кеш dev-сервера (FLUSHDB на базе №2).
+    """
+    settings.CACHES = {
+        "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+    }
     cache.clear()
