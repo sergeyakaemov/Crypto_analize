@@ -12,7 +12,7 @@ JWT-аутентификация, документация OpenAPI (drf-spectacu
 
 - Python 3.12+
 - PostgreSQL
-- Redis — брокер для фоновых задач Celery (на Windows подойдёт Memurai)
+- Redis — брокер задач Celery и кеш для счётчиков лимитов (на Windows подойдёт Memurai)
 
 ## Установка для разработки
 
@@ -56,6 +56,7 @@ celery -A config beat -l info
 | `COINMARKETCAP_API_KEY` | ключ CoinMarketCap (если выбрана эта биржа) | — |
 | `CELERY_BROKER_URL` | адрес брокера задач | `redis://localhost:6379/0` |
 | `CELERY_RESULT_BACKEND` | хранилище результатов задач | `redis://localhost:6379/1` |
+| `REDIS_CACHE_URL` | кеш Django и счётчики лимитов запросов | `redis://localhost:6379/2` |
 
 `DJANGO_DEBUG` по умолчанию выключен: если на сервере забыть задать переменную,
 отладочные страницы с кодом и настройками не откроются посторонним.

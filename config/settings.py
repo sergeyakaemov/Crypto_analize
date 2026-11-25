@@ -143,6 +143,16 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
+# Кеш общий для всех воркеров gunicorn: здесь DRF хранит счётчики лимитов.
+# Тот же Redis, что у Celery, но отдельная база №2.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.getenv("REDIS_CACHE_URL", "redis://localhost:6379/2"),
+    }
+}
+
+
 # Биржа для запросов цен и проверки символов: ключ из crypto.sources.SOURCES
 EXCHANGE_PROVIDER = os.getenv("EXCHANGE_PROVIDER", "coingecko")
 
