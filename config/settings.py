@@ -143,6 +143,19 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
+# Whitenoise: при collectstatic добавляет хеш в имена файлов и создаёт
+# сжатые .gz/.br копии. default указан явно — STORAGES заменяет
+# значение по умолчанию целиком, без него пропало бы хранилище файлов.
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+
 # Кеш общий для всех воркеров gunicorn: здесь DRF хранит счётчики лимитов.
 # Тот же Redis, что у Celery, но отдельная база №2.
 CACHES = {
