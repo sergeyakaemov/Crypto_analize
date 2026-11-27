@@ -1,21 +1,21 @@
 import pytest
 from rest_framework.test import APIClient
 
+from crypto.tests.helpers import api_reverse
 from crypto.throttling import AdminRateThrottle, NonAdminUserRateThrottle
 
 pytestmark = pytest.mark.django_db
 
-SNAPSHOTS_URL = "/api/v1/snapshots/"
-
 
 def test_anonymous_gets_429_after_five_requests():
     """Аноним: 5 запросов в минуту проходят, шестой отбивается с Retry-After."""
+    url = api_reverse("snapshot-list")
     client = APIClient()
 
     for _ in range(5):
-        assert client.get(SNAPSHOTS_URL).status_code == 200
+        assert client.get(url).status_code == 200
 
-    response = client.get(SNAPSHOTS_URL)
+    response = client.get(url)
 
     assert response.status_code == 429
     assert response.has_header("Retry-After")
@@ -23,9 +23,10 @@ def test_anonymous_gets_429_after_five_requests():
 
 def test_authenticated_user_is_not_limited_by_anon_rate(user_api_client):
     """Залогиненного не ограничивает лимит анонима: 6 запросов подряд — без 429."""
+    url = api_reverse("snapshot-list")
 
     for _ in range(6):
-        assert user_api_client.get(SNAPSHOTS_URL).status_code == 200
+        assert user_api_client.get(url).status_code == 200
 
 
 def test_admin_throttle_counts_only_superusers(mocker, admin_user, user):
