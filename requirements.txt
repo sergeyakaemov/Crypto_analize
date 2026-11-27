@@ -12,12 +12,15 @@ pytest-mock==3.15.1
 pytest-django==4.14.0
 
 Django==6.1
+whitenoise==6.12.0
+gunicorn==27.0.1
 psycopg2-binary==2.9.12
 
 djangorestframework==3.18.0
-
-djangorestframework==3.18.0
 djangorestframework-simplejwt==5.5.1
+
+drf-spectacular==0.30.0
+django-filter==26.2
 
 # Зависимости разработки
 django-debug-toolbar==8.0.0
@@ -26,4 +29,5 @@ django-stubs==6.1.2
 djangorestframework-stubs==3.18.2
 mypy==2.4.1
 types-requests==2.33.0.20261030
+types-django-filter==26.2.0.20261107
 pre-commit==4.7.0

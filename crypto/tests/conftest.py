@@ -1,5 +1,7 @@
 import pytest
 import requests
+from django.core.cache import cache
+from rest_framework.test import APIClient
 
 from crypto.models import CoinPrice, Snapshot
 
@@ -85,3 +87,30 @@ def make_snapshot(db):
         return snapshot
 
     return make
+
+
+@pytest.fixture
+def admin_api_client(admin_user):
+    client = APIClient()
+    client.force_authenticate(user=admin_user)
+    return client
+
+
+@pytest.fixture
+def user_api_client(user):
+    client = APIClient()
+    client.force_authenticate(user=user)
+    return client
+
+
+@pytest.fixture(autouse=True)
+def clear_cache(settings):
+    """Кеш в памяти вместо Redis и чистый перед каждым тестом.
+
+    Тестам не нужен запущенный Redis, а cache.clear() не стирает
+    кеш dev-сервера (FLUSHDB на базе №2).
+    """
+    settings.CACHES = {
+        "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+    }
+    cache.clear()
