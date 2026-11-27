@@ -33,3 +33,17 @@ def test_missing_watchlist_item_returns_404_in_common_format(admin_api_client):
     assert response.status_code == 404
     assert response.json()["code"] == "not_found"
     assert set(response.json()) == {"error", "code"}
+
+
+def test_unknown_api_path_returns_404_in_common_format():
+    response = APIClient().get("/api/v1/nope/")
+
+    assert response.status_code == 404
+    assert response.json() == {"error": "Не найдено.", "code": "not_found"}
+
+
+def test_unknown_non_api_path_keeps_html_404(client):
+    response = client.get("/nope/")
+
+    assert response.status_code == 404
+    assert response["Content-Type"].startswith("text/html")

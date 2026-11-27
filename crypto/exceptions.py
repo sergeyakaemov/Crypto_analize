@@ -1,6 +1,8 @@
 import logging
 from typing import Any
 
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.views.defaults import page_not_found
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
@@ -42,3 +44,19 @@ def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response |
     detail = response.data["detail"]
     response.data = {"error": str(detail), "code": detail.code}
     return response
+
+
+def api_page_not_found(request: HttpRequest, exception: Exception) -> HttpResponse:
+    """404 для путей, не совпавших ни с одним маршрутом.
+
+    До DRF такой запрос не доходит, поэтому api_exception_handler его не видит.
+    Для /api/ отвечаем в общем формате ошибок, для остального — стандартной
+    HTML-страницей Django.
+    """
+    if request.path.startswith("/api/"):
+        return JsonResponse(
+            {"error": "Не найдено.", "code": "not_found"},
+            status=404,
+            json_dumps_params={"ensure_ascii": False},
+        )
+    return page_not_found(request, exception)

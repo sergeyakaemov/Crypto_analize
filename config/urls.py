@@ -38,5 +38,7 @@ urlpatterns = [
     re_path(r"^api/(?P<version>v1)/", include(api_v1_patterns)),
 ]
 
+handler404 = "crypto.exceptions.api_page_not_found"
+
 if settings.DEBUG:
     urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]
